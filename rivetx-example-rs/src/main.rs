@@ -1,4 +1,4 @@
-use rivetx_example_rs::do_main::do_main;
+use rivetx_example_rs::main_do::do_main;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

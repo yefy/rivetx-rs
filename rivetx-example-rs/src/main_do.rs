@@ -24,10 +24,15 @@ pub async fn do_main() -> anyhow::Result<()> {
     }
 
     log::info!("do_main start");
+    log::info!("rivetx_sql_tests");
     rivetx_sql_tests().await?;
+    log::info!("spawnx_tests");
     spawnx_tests().await?;
+    log::info!("linked_hash_map_tests");
     linked_hash_map_tests().await?;
+    log::info!("moka_tests");
     moka_tests().await?;
+    log::info!("rivetx_string_tests");
     rivetx_string_tests()?;
     log::info!("do_main end");
 
