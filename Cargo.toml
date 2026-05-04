@@ -1,0 +1,34 @@
+[workspace]
+resolver = "1"
+members = ["rivetx-sql-derive-rs", "rivetx-sql-rs", "rivetx-example-rs", "rivetx-core-rs"]
+default-members = ["rivetx-sql-derive-rs", "rivetx-sql-rs", "rivetx-example-rs", "rivetx-core-rs"]
+exclude = [
+    ".git",
+    ".idea",
+]
+
+[profile.dev]
+debug = true
+panic = "unwind"
+incremental = true
+strip = false
+#opt-level = 0
+#split-debuginfo = '...'  # Platform-specific.
+#debug-assertions = true
+#overflow-checks = true
+#lto = false
+#codegen-units = 256
+#rpath = false
+
+[profile.release]
+debug = false
+panic = "abort"
+opt-level = 3
+#lto = false
+lto = "thin"
+codegen-units = 1
+incremental = false
+rpath = false
+#debug-assertions = false
+#overflow-checks = false
+strip = true

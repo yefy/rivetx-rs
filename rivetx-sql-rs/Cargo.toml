@@ -1,0 +1,15 @@
+[package]
+name = "rivetx-sql-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rivetx-sql-derive-rs = { path = "../rivetx-sql-derive-rs" }
+mysql_async = "0.34.2"
+tokio = "1.32.0"
+serde = { version = "1.0", features = ["derive", "rc"] }
+anyhow = { git = "https://github.com/yefy/anyhow.git" }
+log = "0.4.29"
+mysql_common = "0.32.4"
+futures = "0.3.32"
+rivetx-core-rs = { path = "../rivetx-core-rs" }
