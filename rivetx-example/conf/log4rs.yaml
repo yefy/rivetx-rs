@@ -1,0 +1,40 @@
+# log4rs.yaml
+refresh_rate: 10 seconds
+# appender
+appenders:
+  stdout:
+    kind: console
+    encoder:
+      kind: pattern
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} {h({l:<6})} {t} {f}:{L} {m}{n}"
+  file:
+    kind: file
+    path: "logs/rivetx.log"
+    encoder:
+      kind: pattern
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} {h({l:<6})} {t} {f}:{L} {m}{n}"
+    append: true
+root:
+  level: info
+  multiline: true
+  appenders:
+    - stdout
+    - file
+
+loggers:
+  main:
+    level: trace
+    additive: true
+    multiline: true
+  test:
+    level: trace
+    additive: true
+    multiline: true
+  rivetx_sql:
+    level: trace
+    additive: true
+    multiline: true
+
+
+
+# error warn info  debug  trace

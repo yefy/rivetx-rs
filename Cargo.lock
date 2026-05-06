@@ -373,6 +373,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -1474,6 +1475,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "cc",
+ "chrono",
  "cmake",
  "crc32fast",
  "flate2",
@@ -1909,10 +1911,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "rivetx-core-rs"
+name = "rivetx-core"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102",
  "async-channel",
  "awaitgroup",
  "backtrace",
@@ -1930,19 +1932,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "rivetx-example-rs"
+name = "rivetx-example"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102",
  "axum",
  "linked-hash-map",
  "log",
  "log4rs",
  "moka",
  "mysql_async",
- "rivetx-core-rs",
- "rivetx-sql-derive-rs",
- "rivetx-sql-rs",
+ "rivetx-core",
+ "rivetx-sql",
+ "rivetx-sql-derive",
  "scopeguard",
  "serde",
  "serde_json",
@@ -1950,28 +1952,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "rivetx-sql-derive-rs"
+name = "rivetx-sql"
 version = "0.1.0"
 dependencies = [
- "proc-macro2",
- "quote",
- "rivetx-core-rs",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "rivetx-sql-rs"
-version = "0.1.0"
-dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102",
+ "chrono",
  "futures",
  "log",
  "mysql_async",
  "mysql_common",
- "rivetx-core-rs",
- "rivetx-sql-derive-rs",
+ "rivetx-core",
+ "rivetx-sql-derive",
  "serde",
  "tokio",
+]
+
+[[package]]
+name = "rivetx-sql-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "rivetx-core",
+ "syn 1.0.109",
 ]
 
 [[package]]

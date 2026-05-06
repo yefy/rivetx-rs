@@ -1,11 +1,12 @@
 [workspace]
 resolver = "1"
-members = ["rivetx-sql-derive-rs", "rivetx-sql-rs", "rivetx-example-rs", "rivetx-core-rs"]
-default-members = ["rivetx-sql-derive-rs", "rivetx-sql-rs", "rivetx-example-rs", "rivetx-core-rs"]
+members = ["rivetx-sql-derive", "rivetx-sql", "rivetx-example", "rivetx-core"]
+default-members = ["rivetx-sql-derive", "rivetx-sql", "rivetx-example", "rivetx-core"]
 exclude = [
     ".git",
     ".idea",
 ]
+
 
 [profile.dev]
 debug = true

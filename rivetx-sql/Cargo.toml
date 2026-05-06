@@ -1,0 +1,17 @@
+[package]
+name = "rivetx-sql"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rivetx-sql-derive = { path = "../rivetx-sql-derive" }
+tokio = "1.32.0"
+serde = { version = "1.0", features = ["derive", "rc"] }
+anyhow = "1.0.102"
+#anyhow = { git = "https://github.com/yefy/anyhow.git" }
+log = "0.4.29"
+mysql_common = "0.32.4"
+futures = "0.3.32"
+rivetx-core = { path = "../rivetx-core" }
+mysql_async = { version = "0.34", features = ["chrono"] }
+chrono = { version = "0.4", features = ["clock"] }
