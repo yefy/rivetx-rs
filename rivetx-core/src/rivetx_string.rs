@@ -17,6 +17,18 @@ pub enum RivetxString {
 }
 
 impl RivetxString {
+    pub fn to_arc_string(self) -> ArcString {
+        match self {
+            Self::Owned(s) => ArcString::from(s),
+            Self::SharedStr(s) => ArcString::from(s),
+            Self::SharedString(s) => ArcString::from(s),
+            Self::ArcString(s) => s,
+            Self::Static(s) => ArcString::from(s),
+        }
+    }
+}
+
+impl RivetxString {
     pub fn from_str(s: &str) -> Self {
         RivetxString::Owned(s.to_string())
     }
@@ -55,23 +67,6 @@ impl From<ArcString> for RivetxString {
 impl From<&'static str> for RivetxString {
     fn from(s: &'static str) -> Self {
         RivetxString::Static(s)
-    }
-}
-
-impl RivetxString {
-    #[inline]
-    pub fn as_str(&self) -> &str {
-        match self {
-            RivetxString::Owned(s) => s.as_str(),
-            RivetxString::SharedStr(s) => s,
-            RivetxString::SharedString(s) => s.as_str(),
-            RivetxString::ArcString(s) => s.as_str(),
-            RivetxString::Static(s) => s,
-        }
-    }
-
-    pub fn push_str(&mut self, string: &str) {
-        *self = Self::from(format!("{}{}", self.as_str(), string));
     }
 }
 
@@ -144,6 +139,10 @@ impl Clone for RivetxString {
 }
 
 impl RivetxString {
+    pub fn new(str: String) -> Self {
+        RivetxString::from(str)
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
         self.as_str().len()
@@ -154,8 +153,42 @@ impl RivetxString {
         self.len() == 0
     }
 
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        match self {
+            RivetxString::Owned(s) => s.as_str(),
+            RivetxString::SharedStr(s) => s,
+            RivetxString::SharedString(s) => s.as_str(),
+            RivetxString::ArcString(s) => s.as_str(),
+            RivetxString::Static(s) => s,
+        }
+    }
     pub fn to_string(&self) -> String {
         self.as_str().to_string()
+    }
+
+    pub fn into_string(self) -> String {
+        match self {
+            RivetxString::Owned(s) => s,
+            _ => self.as_str().to_string(),
+        }
+    }
+
+    pub fn push_str(&mut self, string: &str) {
+        match self {
+            RivetxString::Owned(s) => s.push_str(string),
+            _ => *self = Self::from(format!("{}{}", self.as_str(), string)),
+        }
+    }
+
+    pub fn trim(&self) -> Self {
+        let s = self.as_str();
+        let trimmed = s.trim();
+        if trimmed.len() == s.len() {
+            return self.clone();
+        }
+
+        Self::from_str(trimmed)
     }
 }
 

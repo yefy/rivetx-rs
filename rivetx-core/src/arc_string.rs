@@ -1,3 +1,4 @@
+use crate::rivetx_string::RivetxString;
 use core::ops::RangeBounds;
 use lazy_static::lazy_static;
 use mysql_common::value::convert::FromValue;
@@ -22,6 +23,17 @@ enum ArcStringValue {
     Static(&'static str),
 }
 
+impl ArcStringValue {
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        match self {
+            ArcStringValue::SharedStr(s) => s,
+            ArcStringValue::SharedString(s) => s.as_str(),
+            ArcStringValue::Static(s) => s,
+        }
+    }
+}
+
 impl Deref for ArcStringValue {
     type Target = str;
 
@@ -40,21 +52,151 @@ impl Clone for ArcStringValue {
     }
 }
 
-impl ArcStringValue {
+//#[derive(Clone)]
+pub struct ArcString {
+    data: ArcStringValue,
+    range: Range<usize>,
+}
+
+impl From<RivetxString> for ArcString {
+    fn from(s: RivetxString) -> Self {
+        s.to_arc_string()
+    }
+}
+
+impl ArcString {
+    pub fn from_str(s: &str) -> Self {
+        ArcString::from(s.to_string())
+    }
+}
+
+// impl From<&str> for ArcString {
+//     #[inline]
+//     fn from(s: &str) -> Self {
+//         let s = s.to_owned();
+//         Self::new(s)
+//     }
+// }
+
+impl From<String> for ArcString {
     #[inline]
-    pub fn as_str(&self) -> &str {
-        match self {
-            ArcStringValue::SharedStr(s) => s,
-            ArcStringValue::SharedString(s) => s.as_str(),
-            ArcStringValue::Static(s) => s,
+    fn from(s: String) -> Self {
+        if s.len() <= 0 {
+            return EMPTY_ARC_STR.clone();
+        }
+        let len = s.len();
+        Self {
+            data: ArcStringValue::SharedString(Arc::new(s)),
+            range: Range { start: 0, end: len },
         }
     }
 }
 
-#[derive(Clone)]
-pub struct ArcString {
-    data: ArcStringValue,
-    range: Range<usize>,
+impl From<Arc<str>> for ArcString {
+    fn from(s: Arc<str>) -> Self {
+        if s.len() <= 0 {
+            return EMPTY_ARC_STR.clone();
+        }
+        let len = s.len();
+        Self {
+            data: ArcStringValue::SharedStr(s),
+            range: Range { start: 0, end: len },
+        }
+    }
+}
+
+impl From<Arc<String>> for ArcString {
+    fn from(s: Arc<String>) -> Self {
+        if s.len() <= 0 {
+            return EMPTY_ARC_STR.clone();
+        }
+        let len = s.len();
+        Self {
+            data: ArcStringValue::SharedString(s),
+            range: Range { start: 0, end: len },
+        }
+    }
+}
+
+impl From<&'static str> for ArcString {
+    fn from(s: &'static str) -> Self {
+        if s.len() <= 0 {
+            return EMPTY_ARC_STR.clone();
+        }
+        let len = s.len();
+        Self {
+            data: ArcStringValue::Static(s),
+            range: Range { start: 0, end: len },
+        }
+    }
+}
+
+impl Deref for ArcString {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl fmt::Display for ArcString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self.as_str(), f)
+    }
+}
+
+impl fmt::Debug for ArcString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ArcString").field(&self.as_str()).finish()
+    }
+}
+
+impl PartialEq for ArcString {
+    fn eq(&self, other: &ArcString) -> bool {
+        PartialEq::eq(&self[..], &other[..])
+    }
+    fn ne(&self, other: &ArcString) -> bool {
+        PartialEq::ne(&self[..], &other[..])
+    }
+}
+
+impl PartialEq<&str> for ArcString {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+impl Eq for ArcString {}
+
+impl PartialOrd for ArcString {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for ArcString {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // 比较字典序
+        self.as_str().cmp(other.as_str())
+    }
+}
+
+impl Clone for ArcString {
+    fn clone(&self) -> Self {
+        match &self.data {
+            ArcStringValue::SharedStr(s) => Self {
+                data: ArcStringValue::SharedStr(Arc::clone(s)),
+                range: self.range.clone(),
+            },
+            ArcStringValue::SharedString(s) => Self {
+                data: ArcStringValue::SharedString(Arc::clone(s)),
+                range: self.range.clone(),
+            },
+            ArcStringValue::Static(s) => Self {
+                data: ArcStringValue::Static(s),
+                range: self.range.clone(),
+            },
+        }
+    }
 }
 
 impl ArcString {
@@ -74,12 +216,21 @@ impl ArcString {
         self.range.end - self.range.start
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn as_str(&self) -> &str {
         &self.data[self.range.start..self.range.end]
     }
 
     pub fn to_string(&self) -> String {
         self.as_str().to_string()
+    }
+
+    pub fn push_str(&mut self, string: &str) {
+        *self = Self::from(format!("{}{}", self.as_str(), string));
     }
 
     pub fn trim(&self) -> Self {
@@ -138,20 +289,31 @@ impl ArcString {
             },
         }
     }
-}
 
-impl Default for ArcString {
-    #[inline]
-    fn default() -> Self {
-        return EMPTY_ARC_STR.clone();
-    }
-}
+    pub fn split(&self, delimiter: &str) -> Vec<Self> {
+        let s = self.as_str();
+        let base_ptr = s.as_ptr() as usize;
 
-impl Deref for ArcString {
-    type Target = str;
+        s.split(delimiter)
+            .map(|part| {
+                // 计算当前子串相对于 self.as_str() 起始位置的偏移
+                let part_ptr = part.as_ptr() as usize;
+                let offset = part_ptr - base_ptr;
 
-    fn deref(&self) -> &Self::Target {
-        self.as_str()
+                // 基于原始的 self.range 进行切片
+                // 新的 start 是原 start 加上子串在当前视图中的偏移
+                let new_start = self.range.start + offset;
+                let new_end = new_start + part.len();
+
+                Self {
+                    data: self.data.clone(),
+                    range: Range {
+                        start: new_start,
+                        end: new_end,
+                    },
+                }
+            })
+            .collect()
     }
 }
 
@@ -161,112 +323,22 @@ impl AsRef<[u8]> for ArcString {
     }
 }
 
-impl From<String> for ArcString {
+impl AsRef<str> for ArcString {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Default for ArcString {
     #[inline]
-    fn from(s: String) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
-        }
-        let len = s.len();
-        Self {
-            data: ArcStringValue::SharedString(Arc::new(s)),
-            range: Range { start: 0, end: len },
-        }
-    }
-}
-
-impl ArcString {
-    pub fn from_str(s: &str) -> Self {
-        ArcString::from(s.to_string())
-    }
-}
-
-// impl From<&str> for ArcString {
-//     #[inline]
-//     fn from(s: &str) -> Self {
-//         let s = s.to_owned();
-//         Self::new(s)
-//     }
-// }
-
-impl From<Arc<str>> for ArcString {
-    fn from(s: Arc<str>) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
-        }
-        let len = s.len();
-        Self {
-            data: ArcStringValue::SharedStr(s),
-            range: Range { start: 0, end: len },
-        }
-    }
-}
-
-impl From<Arc<String>> for ArcString {
-    fn from(s: Arc<String>) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
-        }
-        let len = s.len();
-        Self {
-            data: ArcStringValue::SharedString(s),
-            range: Range { start: 0, end: len },
-        }
-    }
-}
-
-impl From<&'static str> for ArcString {
-    fn from(s: &'static str) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
-        }
-        let len = s.len();
-        Self {
-            data: ArcStringValue::Static(s),
-            range: Range { start: 0, end: len },
-        }
+    fn default() -> Self {
+        return EMPTY_ARC_STR.clone();
     }
 }
 
 impl Hash for ArcString {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_str().hash(state);
-    }
-}
-
-impl Eq for ArcString {}
-
-impl PartialEq for ArcString {
-    fn eq(&self, other: &ArcString) -> bool {
-        PartialEq::eq(&self[..], &other[..])
-    }
-    fn ne(&self, other: &ArcString) -> bool {
-        PartialEq::ne(&self[..], &other[..])
-    }
-}
-
-impl PartialOrd for ArcString {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ArcString {
-    fn cmp(&self, other: &Self) -> Ordering {
-        // 比较字典序
-        self.as_str().cmp(other.as_str())
-    }
-}
-
-impl fmt::Debug for ArcString {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("ArcString").field(&self.as_str()).finish()
-    }
-}
-
-impl fmt::Display for ArcString {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self.as_str(), f)
     }
 }
 
@@ -564,6 +636,13 @@ pub mod tests {
                 // 测试 `key1` 重复插入（应覆盖旧值）
                 map.insert(arc_string3, 30);
                 assert_eq!(*map.get(&arc_string1).unwrap(), 30);
+            }
+
+            let str = ArcString::from(" aaa1 aaa313 aaarwr aaahth4342");
+            let strs = str.as_str().split("aaa").collect::<Vec<&str>>();
+            let arc_strs = str.split("aaa");
+            for (i, data) in arc_strs.iter().enumerate() {
+                assert_eq!(strs[i], data.as_str());
             }
         }
     }
