@@ -7,8 +7,8 @@ pub mod async_channel;
 pub mod linux_limit;
 pub mod rivetx_string;
 pub mod spawnx;
+pub mod task_group;
 pub mod thread_panic;
-pub mod wait_group_context;
 
 pub mod rivetx_string_tests;
 pub mod spawnx_tests;

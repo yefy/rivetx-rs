@@ -1,22 +1,22 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-pub struct WaitGroupContextContext {
+pub struct TaskGroupContext {
     await_group: awaitgroup::WaitGroup,
     quit_tx: tokio::sync::broadcast::Sender<bool>,
     is_quit: AtomicBool,
 }
 
 #[derive(Clone)]
-pub struct WaitGroupContext {
-    data: Arc<WaitGroupContextContext>,
+pub struct TaskGroup {
+    data: Arc<TaskGroupContext>,
 }
 
-impl WaitGroupContext {
+impl TaskGroup {
     pub fn new() -> Self {
         let (tx, _) = tokio::sync::broadcast::channel(10);
         Self {
-            data: Arc::new(WaitGroupContextContext {
+            data: Arc::new(TaskGroupContext {
                 await_group: awaitgroup::WaitGroup::new(),
                 quit_tx: tx,
                 is_quit: AtomicBool::new(false),
@@ -49,14 +49,19 @@ impl WaitGroupContext {
         Ok(())
     }
 
-    pub fn add(&self) -> awaitgroup::WorkerInner {
-        self.data.await_group.worker().add()
-    }
-    pub fn done(&self, worker: awaitgroup::WorkerInner) {
-        worker.done()
+    pub fn add(&self) {
+        self.data.await_group.add()
     }
 
-    pub fn quit_chan(&self) -> tokio::sync::broadcast::Receiver<bool> {
+    pub fn guard_add(&self) -> awaitgroup::WaitGroupGuard {
+        self.data.await_group.guard_add()
+    }
+
+    pub fn done(&self) {
+        self.data.await_group.done();
+    }
+
+    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<bool> {
         self.data.quit_tx.subscribe()
     }
 }

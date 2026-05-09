@@ -5,7 +5,7 @@ use crate::spawnx::{
     tokio_list_add, tokio_list_close, tokio_list_spawn, tokio_spawn, tokio_timer_spawn,
     tokio_uniq_spawn,
 };
-use crate::wait_group_context::WaitGroupContext;
+use crate::task_group::TaskGroup;
 use lazy_static::lazy_static;
 use log::info;
 use std::collections::VecDeque;
@@ -13,34 +13,29 @@ use std::sync::atomic::{AtomicI32, AtomicI64, Ordering};
 use std::sync::Arc;
 
 lazy_static! {
-    pub static ref WAIT_ALL: std::sync::Arc<WaitGroupContext> =
-        std::sync::Arc::new(WaitGroupContext::new());
+    pub static ref WAIT_ALL: std::sync::Arc<TaskGroup> = std::sync::Arc::new(TaskGroup::new());
 }
 
 lazy_static! {
-    pub static ref WAIT_BATCH: std::sync::Arc<WaitGroupContext> =
-        std::sync::Arc::new(WaitGroupContext::new());
+    pub static ref WAIT_BATCH: std::sync::Arc<TaskGroup> = std::sync::Arc::new(TaskGroup::new());
 }
 
 lazy_static! {
-    pub static ref WAIT_UNIQ: std::sync::Arc<WaitGroupContext> =
-        std::sync::Arc::new(WaitGroupContext::new());
+    pub static ref WAIT_UNIQ: std::sync::Arc<TaskGroup> = std::sync::Arc::new(TaskGroup::new());
 }
 
 lazy_static! {
-    pub static ref WAIT_LIST: std::sync::Arc<WaitGroupContext> =
-        std::sync::Arc::new(WaitGroupContext::new());
+    pub static ref WAIT_LIST: std::sync::Arc<TaskGroup> = std::sync::Arc::new(TaskGroup::new());
 }
 
 lazy_static! {
-    pub static ref WAIT_TIMER: std::sync::Arc<WaitGroupContext> =
-        std::sync::Arc::new(WaitGroupContext::new());
+    pub static ref WAIT_TIMER: std::sync::Arc<TaskGroup> = std::sync::Arc::new(TaskGroup::new());
 }
 
 pub struct Data {
     pub n: i32,
     pub t: i64,
-    pub worker: Option<awaitgroup::WorkerInner>,
+    pub worker: Option<awaitgroup::WaitGroupGuard>,
 }
 
 const IS_OPEN_BATCH: bool = true;
@@ -129,7 +124,7 @@ pub async fn test_tokio_batch_spawn() {
                 let worker = data.worker.take();
                 scopeguard::defer! {
                     if worker.is_some() {
-                        WAIT_BATCH.done(worker.unwrap());
+                        drop(worker.unwrap());
                     }
                 };
 
@@ -155,7 +150,7 @@ pub async fn test_tokio_batch_spawn() {
         let data = Data {
             n: index,
             t: chrono::Local::now().timestamp_nanos(),
-            worker: Some(WAIT_BATCH.add()),
+            worker: Some(WAIT_BATCH.guard_add()),
         };
         tokio_batch_add(name, Box::new(data)).await;
     }
@@ -171,10 +166,10 @@ pub async fn test_tokio_uniq_spawn() {
             t: chrono::Local::now().timestamp_nanos(),
             worker: None,
         };
-        let worker = WAIT_UNIQ.add();
+        WAIT_UNIQ.add();
         tokio_uniq_spawn(name, true, async move {
             scopeguard::defer! {
-                WAIT_UNIQ.done(worker);
+                WAIT_UNIQ.done();
             };
             let uniq_num = UNIQ_SPAWN_NUM.fetch_add(1, Ordering::Relaxed) + 1;
 
@@ -209,7 +204,7 @@ pub async fn test_tokio_list_spawn() {
         let worker = data.worker.take();
         scopeguard::defer! {
             if worker.is_some() {
-                WAIT_LIST.done(worker.unwrap());
+                drop(worker.unwrap());
             }
         };
 
@@ -236,7 +231,7 @@ pub async fn test_tokio_list_spawn() {
         let data = Data {
             n: index,
             t: chrono::Local::now().timestamp_nanos(),
-            worker: Some(WAIT_LIST.add()),
+            worker: Some(WAIT_LIST.guard_add()),
         };
         tokio_list_add(name, Box::new(data)).await;
     }
@@ -247,7 +242,7 @@ pub async fn test_tokio_timer_spawn() {
     let name = "test1";
     let mut workers = VecDeque::with_capacity(TIMER_SPAWN_MAX as usize);
     for _ in 0..TIMER_SPAWN_MAX {
-        let worker = WAIT_TIMER.add();
+        let worker = WAIT_TIMER.guard_add();
         workers.push_back(worker);
     }
     let workers = std::sync::Arc::new(std::sync::Mutex::new(workers));
@@ -261,7 +256,7 @@ pub async fn test_tokio_timer_spawn() {
                 let worker = { workers.lock().unwrap().pop_front() };
                 scopeguard::defer! {
                     if worker.is_some() {
-                        WAIT_TIMER.done(worker.unwrap());
+                        drop(worker.unwrap());
                     }
                 };
                 let data = Data {
@@ -387,12 +382,12 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
     if IS_OPEN_BATCH {
         let batch_spawn_time = batch_spawn_time.clone();
-        let main_worker = WAIT_ALL.add();
+        WAIT_ALL.add();
         tokio_spawn(async move {
             defer_async(move |defer| {
                 Box::pin(async move {
                     defer.add(|| {
-                        WAIT_ALL.done(main_worker);
+                        WAIT_ALL.done();
                         Ok(())
                     });
 
@@ -410,12 +405,12 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
     if IS_OPEN_UNIQ {
         let uniq_spawn_time = uniq_spawn_time.clone();
-        let main_worker = WAIT_ALL.add();
+        WAIT_ALL.add();
         tokio_spawn(async move {
             defer_async(move |defer| {
                 Box::pin(async move {
                     defer.add(|| {
-                        WAIT_ALL.done(main_worker);
+                        WAIT_ALL.done();
                         Ok(())
                     });
 
@@ -433,12 +428,12 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
     if IS_OPEN_LIST {
         let list_spawn_time = list_spawn_time.clone();
-        let main_worker = WAIT_ALL.add();
+        WAIT_ALL.add();
         tokio_spawn(async move {
             defer_async(move |defer| {
                 Box::pin(async move {
                     defer.add(|| {
-                        WAIT_ALL.done(main_worker);
+                        WAIT_ALL.done();
                         Ok(())
                     });
 
@@ -456,12 +451,12 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
     if IS_OPEN_TIMER {
         let timer_spawn_time = timer_spawn_time.clone();
-        let main_worker = WAIT_ALL.add();
+        WAIT_ALL.add();
         tokio_spawn(async move {
             defer_async(move |defer| {
                 Box::pin(async move {
                     defer.add(|| {
-                        WAIT_ALL.done(main_worker);
+                        WAIT_ALL.done();
                         Ok(())
                     });
 
@@ -477,12 +472,12 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
         });
     }
 
-    let worder = WAIT_ALL.add();
-    let mut quit_chan = WAIT_ALL.quit_chan();
+    WAIT_ALL.add();
+    let mut quit_chan = WAIT_ALL.subscribe();
     tokio_spawn(async move {
         let _ = quit_chan.recv().await;
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        WAIT_ALL.done(worder);
+        WAIT_ALL.done();
         Ok(())
     });
 

@@ -20,6 +20,11 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_clear_table(rivetx_sql).await?;
 
+    let curr_time = chrono::Local::now()
+        .naive_local()
+        .with_nanosecond(0)
+        .unwrap();
+
     let test_data = vec![
         TestData {
             id: 0,
@@ -27,10 +32,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 1,
             name_index: 1000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -40,10 +42,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 2,
             name_index: 2000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -53,10 +52,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 3,
             name_index: 3000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -80,10 +76,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 10,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         }, // name_id = 10, name_index += 10
@@ -93,10 +86,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 20,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         }, // name_id = 20, name_index += 20
@@ -106,10 +96,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 30,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         }, // name_id = 30, name_index += 30
@@ -140,10 +127,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 1010,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -153,10 +137,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 2020,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -166,10 +147,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 3030,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -201,7 +179,10 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
 async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_clear_table(rivetx_sql).await?;
-
+    let curr_time = chrono::Local::now()
+        .naive_local()
+        .with_nanosecond(0)
+        .unwrap();
     let test_data = vec![
         TestData {
             id: 0,
@@ -209,10 +190,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 1,
             name_index: 1000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -222,10 +200,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 2,
             name_index: 2000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -235,10 +210,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 3,
             name_index: 3000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -261,10 +233,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 10,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -274,10 +243,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 20,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -287,10 +253,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 30,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -326,10 +289,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 1010,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -339,10 +299,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 2020,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -352,10 +309,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 3030,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -379,7 +333,10 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
 async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_clear_table(rivetx_sql).await?;
-
+    let curr_time = chrono::Local::now()
+        .naive_local()
+        .with_nanosecond(0)
+        .unwrap();
     // Rust 中处理指针通常直接使用 Vec 对象，这里逻辑与 Struct2 保持一致
     // 插入初始数据
     let test_data = vec![
@@ -389,10 +346,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 1,
             name_index: 1000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -402,10 +356,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 2,
             name_index: 2000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -415,10 +366,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 3,
             name_index: 3000,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -441,10 +389,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 10,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -454,10 +399,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 20,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -467,10 +409,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 30,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -505,10 +444,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "abc".into(),
             name_id: 10,
             name_index: 1010,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -518,10 +454,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "xyz".into(),
             name_id: 20,
             name_index: 2020,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
@@ -531,10 +464,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
             key: "def".into(),
             name_id: 30,
             name_index: 3030,
-            curr_time: chrono::Local::now()
-                .naive_local()
-                .with_nanosecond(0)
-                .unwrap(),
+            curr_time: curr_time.clone(),
             created_at: zero_naive_date_time(),
             updated_at: zero_naive_date_time(),
         },
