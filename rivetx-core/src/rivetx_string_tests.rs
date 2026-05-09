@@ -1,6 +1,7 @@
 use crate::arc_string::ArcString;
 use crate::rivetx_string::RivetxString;
 use crate::spawnx::tokio_spawn;
+use crate::task_group::TaskGroup;
 use std::sync::Arc;
 
 fn into_rivetx_string(s: impl Into<RivetxString>) -> RivetxString {
@@ -15,7 +16,7 @@ fn from_ref_rivetx_string(s: &RivetxString) -> RivetxString {
     s.clone()
 }
 
-pub fn rivetx_string_tests() -> anyhow::Result<()> {
+pub async fn rivetx_string_tests() -> anyhow::Result<()> {
     let owned_str = RivetxString::from_str("&str");
     let owned_string = RivetxString::from("String".to_string());
     let shared_str = RivetxString::from(Arc::<str>::from("Arc<str>"));
@@ -38,7 +39,10 @@ pub fn rivetx_string_tests() -> anyhow::Result<()> {
         from_ref_rivetx_string.as_str(),
     );
 
+    let tg = TaskGroup::new();
+    let wgg = tg.guard_add();
     tokio_spawn(async move {
+        let _wgg = wgg;
         log::info!(
             "{}|{}|{}|{}|{}|{}|{}{}|{}",
             owned_str.as_str(),
@@ -74,6 +78,6 @@ pub fn rivetx_string_tests() -> anyhow::Result<()> {
         );
         Ok(())
     });
-
+    let _ = tg.wait().await;
     Ok(())
 }

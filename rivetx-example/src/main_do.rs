@@ -33,7 +33,7 @@ pub async fn do_main() -> anyhow::Result<()> {
     log::info!("moka_tests");
     moka_tests().await?;
     log::info!("rivetx_string_tests");
-    rivetx_string_tests()?;
+    rivetx_string_tests().await?;
     log::info!("do_main end");
 
     Ok(())
