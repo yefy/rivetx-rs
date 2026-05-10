@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug rivetx-example",
+            "cargo": {
+                "args": [
+                    "build",
+                    "-p",
+                    "rivetx-example"
+                ],
+                "filter": {
+                    "name": "rivetx-example",
+                    "kind": "bin"
+                }
+            },
+            "cwd": "${workspaceFolder}/rivetx-example",
+            "args": []
+        }
+    ]
+}
