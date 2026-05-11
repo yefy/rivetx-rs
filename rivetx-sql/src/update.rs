@@ -131,7 +131,7 @@ pub async fn update<T>(
     timeout: Duration,
 ) -> Result<UpdateResult>
 where
-    T: FromSqlRow + ToSqlValues + Send + Sync, // 假设 Entity trait 提供元数据
+    T: FromSqlRow + ToSqlValues + Send + Sync, // Assume the Entity trait provides metadata
 {
     if vals.is_empty() || join_on.is_empty() || set_expr.is_empty() {
         return Err(anyhow!("vals, join_on, or set_expr is empty"));

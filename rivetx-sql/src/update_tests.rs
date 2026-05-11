@@ -265,7 +265,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         "u.name_index = u.name_index + v.name_index".into(),
     ];
 
-    // 使用 Builder 模式执行
+    // Execute using the Builder pattern
     let update_len = updates.len() as u64;
     let res = UpdateBuilder::new(rivetx_sql, "test_data", updates)
         .join_on(join_on)
@@ -337,8 +337,8 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         .naive_local()
         .with_nanosecond(0)
         .unwrap();
-    // Rust 中处理指针通常直接使用 Vec 对象，这里逻辑与 Struct2 保持一致
-    // 插入初始数据
+    // In Rust, pointers are usually represented directly with Vec objects; this logic matches Struct2
+    // Insert initial data
     let test_data = vec![
         TestData {
             id: 0,

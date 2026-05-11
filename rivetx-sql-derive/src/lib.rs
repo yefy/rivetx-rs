@@ -88,7 +88,7 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
                     "i64" | "i128" | "isize" | "ArcAtomicI64" => "BIGINT".to_string(),
                     "i32" | "i16" | "i8" | "ArcAtomicI32" => "INT".to_string(),
                     "String" | "&str" | "ArcString" | "RivetxString" => {
-                        // 如果 size 是 TEXT 系列类型，直接使用
+                        // If size is a TEXT family type, use it directly
                         if size == "TINYTEXT"
                             || size == "TEXT"
                             || size == "MEDIUMTEXT"

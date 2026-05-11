@@ -175,7 +175,7 @@ impl PartialOrd for ArcString {
 }
 impl Ord for ArcString {
     fn cmp(&self, other: &Self) -> Ordering {
-        // 比较字典序
+        // Compare lexicographic order
         self.as_str().cmp(other.as_str())
     }
 }
@@ -296,12 +296,12 @@ impl ArcString {
 
         s.split(delimiter)
             .map(|part| {
-                // 计算当前子串相对于 self.as_str() 起始位置的偏移
+                // Compute the offset of the current substring relative to self.as_str() start
                 let part_ptr = part.as_ptr() as usize;
                 let offset = part_ptr - base_ptr;
 
-                // 基于原始的 self.range 进行切片
-                // 新的 start 是原 start 加上子串在当前视图中的偏移
+                // Slice based on the original self.range
+                // New start is original start plus the substring offset in the current view
                 let new_start = self.range.start + offset;
                 let new_end = new_start + part.len();
 
@@ -363,7 +363,7 @@ impl FromValue for ArcString {
 
 impl From<ArcString> for Value {
     fn from(arc_str: ArcString) -> Value {
-        Value::Bytes(arc_str.as_str().as_bytes().to_vec()) // 将 ArcString 转换为字节表示
+        Value::Bytes(arc_str.as_str().as_bytes().to_vec()) // Convert ArcString to byte representation
     }
 }
 
@@ -452,7 +452,7 @@ pub mod tests {
         assert_eq!(arc_string3.to_string(), str3.to_string());
         assert_eq!(&arc_string3[..], str3);
         {
-            // 测试空字符串
+            // Test empty string
             //#[tokio::test]
             //async fn test_empty_string() {
             println!("test_empty_string");
@@ -465,7 +465,7 @@ pub mod tests {
                 assert_eq!(&arc_string[..], empty_str);
             }
 
-            // 测试整个字符串切片
+            // Test full string slice
             //#[tokio::test]
             //async fn test_full_string_slice() {
             println!("test_full_string_slice");
@@ -479,7 +479,7 @@ pub mod tests {
                 assert_eq!(&slice[..], str);
             }
 
-            // 测试部分字符串切片
+            // Test partial string slice
             //#[tokio::test]
             //async fn test_partial_string_slice() {
             println!("test_partial_string_slice");
@@ -493,7 +493,7 @@ pub mod tests {
                 assert_eq!(&slice[..], "world");
             }
 
-            // 测试字符串切片的开始和结束位置
+            // Test string slice start and end positions
             // #[tokio::test]
             // async fn test_boundary_string_slice() {
             println!("test_boundary_string_slice");
@@ -501,18 +501,18 @@ pub mod tests {
                 let str = "hello world";
                 let arc_string = ArcString::from(str);
 
-                // 切片到字符串的第一个字符
+                // Slice to the first character of the string
                 let slice_start = arc_string.slice(0..1);
                 assert_eq!(slice_start.len(), 1);
                 assert_eq!(slice_start.as_str(), "h");
 
-                // 切片到字符串的最后一个字符
+                // Slice to the last character of the string
                 let slice_end = arc_string.slice(10..11);
                 assert_eq!(slice_end.len(), 1);
                 assert_eq!(slice_end.as_str(), "d");
             }
 
-            // 测试字符串切片的越界情况
+            // Test out-of-bounds string slice
             // #[tokio::test]
             // async fn test_out_of_bound_string_slice() {
             println!("test_out_of_bound_string_slice");
@@ -521,18 +521,18 @@ pub mod tests {
                 let arc_string = ArcString::from(str);
 
                 //___disable___
-                // 尝试切片超出范围
+                // Attempt to slice out of bounds
                 // let slice_out_of_bounds = arc_string.slice(10..20);
                 // assert_eq!(slice_out_of_bounds.len(), 0);
                 // assert_eq!(slice_out_of_bounds.as_str(), "");
 
-                // 切片空字符串
+                // Slice empty string
                 let empty_slice = arc_string.slice(5..5);
                 assert_eq!(empty_slice.len(), 0);
                 assert_eq!(empty_slice.as_str(), "");
             }
 
-            // 测试克隆行为，确保 ArcString 是共享数据
+            // Test cloning behavior to ensure ArcString shares data
             // #[tokio::test]
             // async fn test_cloning() {
             println!("test_cloning");
@@ -541,15 +541,15 @@ pub mod tests {
                 let arc_string = ArcString::from(str);
                 let arc_string_clone = arc_string.clone();
 
-                // 克隆后应该共享相同的数据
+                // After cloning, it should share the same data
                 assert_eq!(arc_string.len(), arc_string_clone.len());
                 assert_eq!(arc_string.as_str(), arc_string_clone.as_str());
 
-                // 确保是同一 Arc 实例
+                // Ensure it is the same Arc instance
                 //assert!(Arc::ptr_eq(&arc_string.data, &arc_string_clone.data));
             }
 
-            // 测试不可变性，确保原始字符串不可修改
+            // Test immutability to ensure the original string cannot be modified
             // #[tokio::test]
             // async fn test_immutable() {
             println!("test_immutable");
@@ -557,14 +557,14 @@ pub mod tests {
                 let str = "immutable string";
                 let arc_string = ArcString::from(str);
 
-                // arc_string 应该是不可变的
+                // arc_string should be immutable
                 assert_eq!(arc_string.as_str(), str);
 
-                // 尝试修改原始数据会失败
-                // arc_string.push_str("new data"); // 这行代码应该报错，因为 ArcString 是不可变的
+                // Attempting to modify the original data should fail
+                // arc_string.push_str("new data"); // This line should fail because ArcString is immutable
             }
 
-            // 测试序列化与反序列化
+            // Test serialization and deserialization
             #[derive(Serialize, Deserialize, Debug, PartialEq)]
             struct TestStruct {
                 #[serde(rename = "custom_string")]
@@ -581,36 +581,36 @@ pub mod tests {
                     custom_string: arc_string,
                 };
 
-                // 序列化
+                // Serialize
                 let serialized = serde_json::to_string(&test_struct).unwrap();
                 println!("Serialized: {}", serialized);
 
-                // 反序列化
+                // Deserialize
                 let deserialized: TestStruct = serde_json::from_str(&serialized).unwrap();
                 assert_eq!(deserialized.custom_string, test_struct.custom_string);
             }
 
-            // 测试对大字符串的支持
+            // Test support for large strings
             // #[tokio::test]
             // async fn test_large_string() {
             println!("test_large_string");
             {
-                let large_str = "a".repeat(1_000_000); // 100万字符
+                let large_str = "a".repeat(1_000_000); // 1,000,000 characters
                 let arc_string = ArcString::from(large_str.clone());
                 assert_eq!(arc_string.len(), large_str.len());
                 assert_eq!(arc_string.as_str(), large_str);
                 assert_eq!(arc_string.to_string(), large_str);
             }
 
-            // 测试对大范围切片的支持
+            // Test support for large-range slicing
             // #[tokio::test]
             // async fn test_large_slice() {
             println!("test_large_slice");
             {
-                let large_str = "a".repeat(1_000_000); // 100万字符
+                let large_str = "a".repeat(1_000_000); // 1,000,000 characters
                 let arc_string = ArcString::from(large_str.clone());
 
-                let slice = arc_string.slice(100_000..200_000); // 切片 100,000 到 200,000
+                let slice = arc_string.slice(100_000..200_000); // Slice 100,000 to 200,000
                 assert_eq!(slice.len(), 100_000);
                 assert_eq!(slice.as_str(), "a".repeat(100_000));
             }
@@ -624,16 +624,16 @@ pub mod tests {
                 let arc_string2 = ArcString::from("key2");
                 let arc_string3 = ArcString::from("key1");
 
-                // 插入数据
+                // Insert data
                 map.insert(arc_string1.clone(), 10);
                 map.insert(arc_string2.clone(), 20);
 
-                // 测试能否正确查找
+                // Test lookup correctness
                 assert_eq!(*map.get("key1").unwrap(), 10);
                 assert_eq!(*map.get(&arc_string1).unwrap(), 10);
                 assert_eq!(*map.get(&arc_string2).unwrap(), 20);
 
-                // 测试 `key1` 重复插入（应覆盖旧值）
+                // Test duplicate insertion of `key1` (should overwrite old value)
                 map.insert(arc_string3, 30);
                 assert_eq!(*map.get(&arc_string1).unwrap(), 30);
             }

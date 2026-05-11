@@ -12,7 +12,7 @@ pub async fn test_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
     test_batch_insert_no_duplicate_update(rivetx_sql).await?;
     test_batch_insert_struct_no_duplicate_update(rivetx_sql).await?;
     test_batch_new_insert_struct(rivetx_sql).await?;
-    // Rust 中处理 Vec<T> 和 Vec<Box<T>> 逻辑一致，此处合并演示
+    // In Rust, Vec<T> and Vec<Box<T>> are handled similarly; merged here for demonstration
     Ok(())
 }
 

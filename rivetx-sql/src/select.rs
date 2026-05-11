@@ -338,7 +338,7 @@ where
             let (current_cond, current_args) = if let Some(id) = last_id {
                 let mut c = self.cond.clone();
                 let mut a = self.cond_args.clone();
-                // 拼接游标条件: AND field > ?
+                // Append cursor condition: AND field > ?
                 let cursor_cond = format!("{} {} {} ?", mode, self.order_field, operator);
                 c.push_str(&cursor_cond);
                 a.push(id);

@@ -121,7 +121,7 @@ impl PartialOrd for RivetxString {
 
 impl Ord for RivetxString {
     fn cmp(&self, other: &Self) -> Ordering {
-        // 比较字典序
+        // Compare lexicographic order
         self.as_str().cmp(other.as_str())
     }
 }

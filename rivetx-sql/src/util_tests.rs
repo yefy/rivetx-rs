@@ -225,7 +225,7 @@ pub async fn test_data_query_all_no_id(rivetx_sql: &RivetxSql) -> anyhow::Result
     let result = conn
         .query_map(query, |(index, key, name_id, name_index, curr_time)| {
             TestData {
-                id: 0, // 模拟 Scan 忽略 Id
+                id: 0, // Simulate Scan ignoring Id
                 index,
                 key,
                 name_id,
