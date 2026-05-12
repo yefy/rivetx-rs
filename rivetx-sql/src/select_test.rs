@@ -4,6 +4,7 @@ mod tests {
     use crate::sql_value::SqlValue;
     use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
     use crate::util_tests::TestData;
+    use chrono::Timelike;
     use mysql_async::Value;
     use rivetx_core::rivetx_string::RivetxString;
     use std::time::Duration;
@@ -269,11 +270,9 @@ mod tests {
         assert_eq!(args.len(), 4);
     }
 
-    // ────────── SelectBuilder Construction Tests ──────────
+    // ────────── SelectBuilder Integration Tests (with real DB) ──────────
 
     /// Helper to create a mock RivetxSql for builder construction.
-    /// The builder is only used for state verification (not exec()),
-    /// so the actual connection doesn't matter.
     fn make_mock_sql() -> crate::conn::RivetxSql {
         crate::conn::RivetxSql::new(
             "mysql://root:Yfygz@389@192.168.192.139:3306/test_db",
@@ -283,203 +282,463 @@ mod tests {
         .expect("Failed to create mock RivetxSql")
     }
 
-    #[test]
-    fn test_select_builder_new() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_table");
-        let _builder: SelectBuilder<TestData> = builder;
+    /// Helper: insert initial test data for select tests
+    async fn insert_initial_data(
+        rivetx_sql: &crate::conn::RivetxSql,
+        curr_time: chrono::NaiveDateTime,
+    ) -> anyhow::Result<Vec<TestData>> {
+        let test_data = vec![
+            TestData {
+                id: 0,
+                index: 1,
+                key: "abc".into(),
+                name_id: 100,
+                name_index: 1000,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "def".into(),
+                name_id: 101,
+                name_index: 1001,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "ghi".into(),
+                name_id: 102,
+                name_index: 1002,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "xyz".into(),
+                name_id: 103,
+                name_index: 1003,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        crate::insert::insert(
+            rivetx_sql,
+            &"test_data".into(),
+            &test_data,
+            2,
+            &"".into(),
+            false,
+            Duration::from_secs(10),
+        )
+        .await?;
+
+        Ok(test_data)
     }
 
-    #[test]
-    fn test_select_builder_where_eq() {
+    /// Helper: create table and clear data for a test
+    async fn setup_table(rivetx_sql: &crate::conn::RivetxSql) {
+        crate::util_tests::test_data_create_table(rivetx_sql)
+            .await
+            .unwrap();
+        crate::util_tests::test_data_clear_table(rivetx_sql)
+            .await
+            .unwrap();
+    }
+
+    /// Helper: get current time truncated to seconds
+    fn now_truncated() -> chrono::NaiveDateTime {
+        chrono::Local::now()
+            .naive_local()
+            .with_nanosecond(0)
+            .unwrap()
+    }
+
+    fn zero_naive_date_time() -> chrono::NaiveDateTime {
+        crate::util_tests::zero_naive_date_time()
+    }
+
+    /// Single entry point for all SelectBuilder integration tests.
+    /// Runs sequentially to avoid DB race conditions.
+    #[tokio::test]
+    async fn test_select_builder_integration() {
         let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
+
+        // Run all integration tests sequentially
+        test_exec_basic(&rivetx_sql).await;
+        test_exec_where_eq(&rivetx_sql).await;
+        test_exec_where_cond(&rivetx_sql).await;
+        test_exec_where_cond_multiple(&rivetx_sql).await;
+        test_exec_order(&rivetx_sql).await;
+        test_exec_limit_offset(&rivetx_sql).await;
+        test_exec_chained_calls(&rivetx_sql).await;
+        test_exec_where_in_single_col(&rivetx_sql).await;
+        test_exec_where_in_multi_col(&rivetx_sql).await;
+        test_exec_where_in_empty_vals(&rivetx_sql).await;
+        test_exec_where_eq_different_types(&rivetx_sql).await;
+        test_exec_with_batch_size(&rivetx_sql).await;
+        test_exec_with_timeout(&rivetx_sql).await;
+        test_exec_order_field_select_desc(&rivetx_sql).await;
+        test_exec_order_field_select_asc(&rivetx_sql).await;
+    }
+
+    async fn test_exec_basic(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query all rows with a condition that matches everything
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("1", 1)
+            .order("order by index_col, key_col")
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), initial_data.len());
+        for (i, row) in result.iter().enumerate() {
+            assert_eq!(row.index, initial_data[i].index);
+            assert_eq!(row.key, initial_data[i].key);
+            assert_eq!(row.name_id, initial_data[i].name_id);
+        }
+    }
+
+    async fn test_exec_where_eq(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with where_eq on index_col = 1 (should return 2 rows: abc, def)
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
             .where_eq("index_col", 1i32)
-            .where_eq("key_col", "abc");
+            .order("order by key_col")
+            .exec()
+            .await
+            .unwrap();
 
-        let _builder: SelectBuilder<TestData> = builder;
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[1].key, "def");
     }
 
-    #[test]
-    fn test_select_builder_where_in_single_col() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data").where_in(
-            vec!["id".into()],
-            vec![
-                vec![SqlValue::from(Value::from(1u64))],
-                vec![SqlValue::from(Value::from(2u64))],
-                vec![SqlValue::from(Value::from(3u64))],
-            ],
-        );
+    async fn test_exec_where_cond(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with where_cond
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_cond("index_col = ?", vec![1i32.into()])
+            .where_cond("and key_col = ?", vec!["abc".into()])
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[0].name_id, 100);
     }
 
-    #[test]
-    fn test_select_builder_where_in_multi_col() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data").where_in(
-            vec!["key_col".into(), "name_id".into()],
-            vec![
-                vec![
-                    SqlValue::from(Value::from("abc")),
-                    SqlValue::from(Value::from(1u32)),
-                ],
-                vec![
-                    SqlValue::from(Value::from("xyz")),
-                    SqlValue::from(Value::from(2u32)),
-                ],
-            ],
-        );
+    async fn test_exec_where_cond_multiple(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
-    }
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
 
-    #[test]
-    fn test_select_builder_where_in_batch_size() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .where_in_batch_size(512);
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_where_cond() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .where_cond("index_col = ?", vec![SqlValue::from(Value::from(1i32))]);
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_where_cond_multiple() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .where_cond("index_col = ?", vec![SqlValue::from(Value::from(1i32))])
+        // Query with combined where_cond in a single call
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
             .where_cond(
-                "and key_col = ?",
-                vec![SqlValue::from(Value::from("abc"))],
-            );
+                "index_col = ? and key_col = ?",
+                vec![1i32.into(), "abc".into()],
+            )
+            .exec()
+            .await
+            .unwrap();
 
-        let _builder: SelectBuilder<TestData> = builder;
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].key, "abc");
     }
 
-    #[test]
-    fn test_select_builder_order() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .order("order by index_col, key_col");
+    async fn test_exec_order(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with order by key_col DESC
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("index_col", 1i32)
+            .order("order by key_col desc")
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "def");
+        assert_eq!(result[1].key, "abc");
     }
 
-    #[test]
-    fn test_select_builder_limit() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data").limit(100);
+    async fn test_exec_limit_offset(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with limit and offset
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("1", 1)
+            .order("order by index_col, key_col")
+            .limit(2)
+            .offset(1)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        // offset 1 means skip "abc", so first result should be "def"
+        assert_eq!(result[0].key, "def");
+        assert_eq!(result[1].key, "ghi");
     }
 
-    #[test]
-    fn test_select_builder_offset() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data").offset(50);
+    async fn test_exec_chained_calls(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
-    }
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
 
-    #[test]
-    fn test_select_builder_timeout() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .timeout(Duration::from_secs(30));
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_batch_size() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data").batch_size(512);
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_order_field_select() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .order_field_select("id", true, 10);
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_order_field_select_asc() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .order_field_select("id", false, 20);
-
-        let _builder: SelectBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_select_builder_chained_calls() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
+        // Chain all builder methods
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
             .where_eq("index_col", 1i32)
             .where_in(
                 vec!["key_col".into()],
                 vec![
-                    vec![SqlValue::from(Value::from("abc"))],
-                    vec![SqlValue::from(Value::from("def"))],
+                    vec!["abc".into()],
+                    vec!["def".into()],
                 ],
             )
             .where_cond(
                 "name_id > ?",
-                vec![SqlValue::from(Value::from(100i32))],
+                vec![SqlValue::from(Value::from(50i32))],
             )
-            .order("order by index_col, key_col")
+            .order("order by key_col")
             .limit(10)
-            .offset(5)
+            .offset(0)
             .batch_size(128)
-            .timeout(Duration::from_secs(60));
+            .timeout(Duration::from_secs(60))
+            .exec()
+            .await
+            .unwrap();
 
-        let _builder: SelectBuilder<TestData> = builder;
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[1].key, "def");
     }
 
-    #[test]
-    fn test_select_builder_where_eq_different_types() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .where_eq("id", 1u64)
-            .where_eq("name_id", 42i32)
-            .where_eq("key_col", "hello")
-            .where_eq("is_active", true);
+    async fn test_exec_where_in_single_col(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with where_in on single column
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("index_col", 1i32)
+            .where_in(
+                vec!["key_col".into()],
+                vec![
+                    vec!["abc".into()],
+                    vec!["def".into()],
+                ],
+            )
+            .order("order by key_col")
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[1].key, "def");
     }
 
-    #[test]
-    fn test_select_builder_where_in_empty_vals() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data")
-            .where_in(vec!["id".into()], vec![]);
+    async fn test_exec_where_in_multi_col(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let _builder: SelectBuilder<TestData> = builder;
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with where_in on multiple columns
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_in(
+                vec!["key_col".into(), "name_id".into()],
+                vec![
+                    vec!["abc".into(), 100i32.into()],
+                    vec!["def".into(), 101i32.into()],
+                ],
+            )
+            .order("order by key_col")
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[1].key, "def");
     }
 
-    #[test]
-    fn test_select_builder_join() {
-        let rivetx_sql = make_mock_sql();
-        let builder = SelectBuilder::<TestData>::new(&rivetx_sql, "test_data d").join(
-            "JOIN test_key k ON d.index_col = k.index_col AND d.key_col = k.key_col",
+    async fn test_exec_where_in_empty_vals(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with empty where_in should return an error
+        let result = SelectBuilder::<TestData>::new(rivetx_sql, "test_data")
+            .where_eq("index_col", 1i32)
+            .where_in(vec!["key_col".into()], vec![])
+            .exec()
+            .await;
+
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("len(queryCond.InCols) > 0 && len(queryCond.InVals) == 0"),
+            "Expected error about empty InVals, got: {}",
+            err
         );
+    }
 
-        let _builder: SelectBuilder<TestData> = builder;
+    async fn test_exec_where_eq_different_types(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with where_eq on different types
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("index_col", 1i32)
+            .where_eq("key_col", "abc")
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[0].name_id, 100);
+    }
+
+    async fn test_exec_with_batch_size(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with custom batch_size
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("1", 1)
+            .order("order by index_col, key_col")
+            .batch_size(2)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 4);
+    }
+
+    async fn test_exec_with_timeout(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with custom timeout
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .where_eq("1", 1)
+            .order("order by index_col, key_col")
+            .timeout(Duration::from_secs(30))
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 4);
+    }
+
+    async fn test_exec_order_field_select_desc(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with order_field_select DESC (limit 2)
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .order_field_select("id", true, 2)
+            .timeout(Duration::from_secs(10))
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        // DESC order: highest ids first
+        assert!(result[0].id > result[1].id);
+    }
+
+    async fn test_exec_order_field_select_asc(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        // Query with order_field_select ASC (limit 2)
+        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+            .order_field_select("id", false, 2)
+            .timeout(Duration::from_secs(10))
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        // ASC order: lowest ids first
+        assert!(result[0].id < result[1].id);
     }
 
     // ────────── select_raw Validation Tests ──────────

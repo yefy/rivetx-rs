@@ -1,8 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use crate::update::{update_raw, UpdateBuilder, UpdateResult};
+    use crate::insert::insert;
+    use crate::update::{UpdateBuilder, UpdateResult};
     use crate::util::{BATCH_SIZE, TIMEOUT};
-    use crate::util_tests::TestData;
+    use crate::util_tests::{
+        test_data_clear_table, test_data_create_table, test_data_query_all_no_id,
+        zero_naive_date_time, TestData,
+    };
+    use anyhow::Result;
+    use chrono::Timelike;
     use mysql_async::Value;
     use rivetx_core::rivetx_string::RivetxString;
     use std::time::Duration;
@@ -218,11 +224,9 @@ mod tests {
         assert_eq!(result.last_insert_id, 888888);
     }
 
-    // ────────── UpdateBuilder Construction Tests ──────────
+    // ────────── UpdateBuilder Integration Tests (with real DB) ──────────
 
     /// Helper to create a mock RivetxSql for builder construction.
-    /// The builder is only used for state verification (not exec()),
-    /// so the actual connection doesn't matter.
     fn make_mock_sql() -> crate::conn::RivetxSql {
         crate::conn::RivetxSql::new(
             "mysql://root:Yfygz@389@192.168.192.139:3306/test_db",
@@ -232,324 +236,766 @@ mod tests {
         .expect("Failed to create mock RivetxSql")
     }
 
-    #[test]
-    fn test_update_builder_new() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_table", data);
+    /// Helper: insert initial test data for update tests
+    async fn insert_initial_data(
+        rivetx_sql: &crate::conn::RivetxSql,
+        curr_time: chrono::NaiveDateTime,
+    ) -> Result<Vec<TestData>> {
+        let test_data = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 1,
+                name_index: 1000,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 2,
+                name_index: 2000,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 3,
+                name_index: 3000,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
 
-        let _builder: UpdateBuilder<TestData> = builder;
+        insert(
+            rivetx_sql,
+            &"test_data".into(),
+            &test_data,
+            2,
+            &"".into(),
+            false,
+            Duration::from_secs(10),
+        )
+        .await?;
+
+        Ok(test_data)
     }
 
-    #[test]
-    fn test_update_builder_join_on() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .join_on(vec!["index_col".into(), "key_col".into()]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
+    /// Helper: verify update results match expected values
+    fn verify_update_results(
+        rows: &[TestData],
+        expected: &[TestData],
+    ) -> Result<()> {
+        if rows.len() != expected.len() {
+            anyhow::bail!(
+                "len(rows) {} != len(expected) {}",
+                rows.len(),
+                expected.len()
+            );
+        }
+        for (i, row) in rows.iter().enumerate() {
+            if row != &expected[i] {
+                anyhow::bail!(
+                    "row {} mismatch: got {:?}, want {:?}",
+                    i,
+                    row,
+                    expected[i]
+                );
+            }
+        }
+        Ok(())
     }
 
-    #[test]
-    fn test_update_builder_set_expr() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .set_expr(vec![
-                "u.name_id = v.name_id".into(),
-                "u.name_index = u.name_index + v.name_index".into(),
-            ]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
+    /// Helper: create table and clear data for a test
+    async fn setup_table(rivetx_sql: &crate::conn::RivetxSql) {
+        test_data_create_table(rivetx_sql).await.unwrap();
+        test_data_clear_table(rivetx_sql).await.unwrap();
     }
 
-    #[test]
-    fn test_update_builder_batch_size() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .batch_size(100);
-
-        let _builder: UpdateBuilder<TestData> = builder;
+    /// Helper: get current time truncated to seconds
+    fn now_truncated() -> chrono::NaiveDateTime {
+        chrono::Local::now()
+            .naive_local()
+            .with_nanosecond(0)
+            .unwrap()
     }
 
-    #[test]
-    fn test_update_builder_timeout() {
+    /// Single entry point for all UpdateBuilder integration tests.
+    /// Runs sequentially to avoid DB race conditions.
+    #[tokio::test]
+    async fn test_update_builder_integration() {
         let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .timeout(Duration::from_secs(30));
 
-        let _builder: UpdateBuilder<TestData> = builder;
+        // Run all integration tests sequentially
+        test_exec_basic(&rivetx_sql).await;
+        test_exec_with_expression(&rivetx_sql).await;
+        test_exec_with_batch_size(&rivetx_sql).await;
+        test_exec_with_timeout(&rivetx_sql).await;
+        test_exec_chained_calls(&rivetx_sql).await;
+        test_exec_empty_data(&rivetx_sql).await;
+        test_exec_empty_join_on(&rivetx_sql).await;
+        test_exec_empty_set_expr(&rivetx_sql).await;
+        test_exec_zero_batch_size(&rivetx_sql).await;
+        test_exec_zero_timeout(&rivetx_sql).await;
+        test_exec_multiple_data_items(&rivetx_sql).await;
     }
 
-    #[test]
-    fn test_update_builder_chained_calls() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
+    async fn test_exec_basic(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        let join_on = vec!["index_col".into(), "key_col".into()];
+        let set_expr = vec![
+            "u.name_id = v.name_id".into(),
+            "u.name_index = v.name_index".into(),
+        ];
+
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .join_on(join_on)
+            .set_expr(set_expr)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
+    }
+
+    async fn test_exec_with_expression(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        let join_on = vec!["index_col".into(), "key_col".into()];
+        // Use expression: name_index = name_index + v.name_index
+        let set_expr = vec![
+            "u.name_id = v.name_id".into(),
+            "u.name_index = u.name_index + v.name_index".into(),
+        ];
+
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .join_on(join_on)
+            .set_expr(set_expr)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 1010, // 1000 + 10
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 2020, // 2000 + 20
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 3030, // 3000 + 30
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
+    }
+
+    async fn test_exec_with_batch_size(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        let join_on = vec!["index_col".into(), "key_col".into()];
+        let set_expr = vec![
+            "u.name_id = v.name_id".into(),
+            "u.name_index = v.name_index".into(),
+        ];
+
+        // Use batch_size=2 to test batching logic (3 rows -> 2+1)
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .join_on(join_on)
+            .set_expr(set_expr)
+            .batch_size(2)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
+    }
+
+    async fn test_exec_with_timeout(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        let join_on = vec!["index_col".into(), "key_col".into()];
+        let set_expr = vec![
+            "u.name_id = v.name_id".into(),
+            "u.name_index = v.name_index".into(),
+        ];
+
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .join_on(join_on)
+            .set_expr(set_expr)
+            .timeout(Duration::from_secs(30))
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
+    }
+
+    async fn test_exec_chained_calls(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        // Chain all builder methods
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
             .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec![
                 "u.name_id = v.name_id".into(),
-                "u.name_index = u.name_index + v.name_index".into(),
+                "u.name_index = v.name_index".into(),
             ])
             .batch_size(50)
-            .timeout(Duration::from_secs(60));
+            .timeout(Duration::from_secs(60))
+            .exec()
+            .await
+            .unwrap();
 
-        let _builder: UpdateBuilder<TestData> = builder;
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
     }
 
-    #[test]
-    fn test_update_builder_empty_data() {
-        let rivetx_sql = make_mock_sql();
+    async fn test_exec_empty_data(rivetx_sql: &crate::conn::RivetxSql) {
         let data: Vec<TestData> = Vec::new();
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
+
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
             .join_on(vec!["id".into()])
-            .set_expr(vec!["u.name_id = v.name_id".into()]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_update_builder_multiple_data_items() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default(), TestData::default(), TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec!["u.name_id = v.name_id".into()])
-            .batch_size(2);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_update_builder_join_on_empty() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .join_on(vec![])
-            .set_expr(vec!["u.name_id = v.name_id".into()]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_update_builder_set_expr_empty() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .join_on(vec!["id".into()])
-            .set_expr(vec![]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_update_builder_zero_batch_size() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .batch_size(0)
-            .join_on(vec!["id".into()])
-            .set_expr(vec!["u.name_id = v.name_id".into()]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    #[test]
-    fn test_update_builder_zero_timeout() {
-        let rivetx_sql = make_mock_sql();
-        let data = vec![TestData::default()];
-        let builder = UpdateBuilder::new(&rivetx_sql, "test_data", data)
-            .timeout(Duration::from_secs(0))
-            .join_on(vec!["id".into()])
-            .set_expr(vec!["u.name_id = v.name_id".into()]);
-
-        let _builder: UpdateBuilder<TestData> = builder;
-    }
-
-    // ────────── update_raw Validation Tests ──────────
-
-    /// Test that update_raw rejects empty vals.
-    /// This test verifies the validation logic without needing a DB connection,
-    /// by checking that the error is returned before any DB operation.
-    #[tokio::test]
-    async fn test_update_raw_rejects_empty_vals() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = vec!["id".into(), "name_id".into()];
-        let vals: Vec<Vec<Value>> = Vec::new();
-        let join_on: Vec<RivetxString> = vec!["id".into()];
-        let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
-
-        let result = update_raw(
-            &rivetx_sql,
-            &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
-        )
-        .await;
+            .exec()
+            .await;
 
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(
-            err.contains("vals, cols, join_on, or set_expr is empty"),
+            err.contains("vals, join_on, or set_expr is empty"),
             "Expected error about empty vals, got: {}",
             err
         );
     }
 
-    #[tokio::test]
-    async fn test_update_raw_rejects_empty_cols() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = Vec::new();
-        let vals = vec![vec![Value::from(1u64), Value::from(100i32)]];
-        let join_on: Vec<RivetxString> = vec!["id".into()];
-        let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
+    async fn test_exec_empty_join_on(rivetx_sql: &crate::conn::RivetxSql) {
+        let data = vec![TestData::default()];
 
-        let result = update_raw(
-            &rivetx_sql,
-            &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
-        )
-        .await;
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
+            .join_on(vec![])
+            .set_expr(vec!["u.name_id = v.name_id".into()])
+            .exec()
+            .await;
 
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(
-            err.contains("vals, cols, join_on, or set_expr is empty"),
-            "Expected error about empty cols, got: {}",
-            err
-        );
-    }
-
-    #[tokio::test]
-    async fn test_update_raw_rejects_empty_join_on() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = vec!["id".into(), "name_id".into()];
-        let vals = vec![vec![Value::from(1u64), Value::from(100i32)]];
-        let join_on: Vec<RivetxString> = Vec::new();
-        let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
-
-        let result = update_raw(
-            &rivetx_sql,
-            &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
-        )
-        .await;
-
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("vals, cols, join_on, or set_expr is empty"),
+            err.contains("vals, join_on, or set_expr is empty"),
             "Expected error about empty join_on, got: {}",
             err
         );
     }
 
-    #[tokio::test]
-    async fn test_update_raw_rejects_empty_set_expr() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = vec!["id".into(), "name_id".into()];
-        let vals = vec![vec![Value::from(1u64), Value::from(100i32)]];
-        let join_on: Vec<RivetxString> = vec!["id".into()];
-        let set_expr: Vec<RivetxString> = Vec::new();
+    async fn test_exec_empty_set_expr(rivetx_sql: &crate::conn::RivetxSql) {
+        let data = vec![TestData::default()];
 
-        let result = update_raw(
-            &rivetx_sql,
-            &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
-        )
-        .await;
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
+            .join_on(vec!["id".into()])
+            .set_expr(vec![])
+            .exec()
+            .await;
 
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(
-            err.contains("vals, cols, join_on, or set_expr is empty"),
+            err.contains("vals, join_on, or set_expr is empty"),
             "Expected error about empty set_expr, got: {}",
             err
         );
     }
 
-    #[tokio::test]
-    async fn test_update_raw_rejects_vals_cols_length_mismatch() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = vec!["id".into(), "name_id".into(), "name_index".into()];
-        // Row has only 2 values, but cols has 3
-        let vals = vec![vec![Value::from(1u64), Value::from(100i32)]];
-        let join_on: Vec<RivetxString> = vec!["id".into()];
-        let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
+    async fn test_exec_zero_batch_size(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
 
-        let result = update_raw(
-            &rivetx_sql,
-            &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
-        )
-        .await;
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
 
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("does not match cols length"),
-            "Expected error about length mismatch, got: {}",
-            err
-        );
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        // batch_size(0) should use default BATCH_SIZE
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .batch_size(0)
+            .join_on(vec!["index_col".into(), "key_col".into()])
+            .set_expr(vec![
+                "u.name_id = v.name_id".into(),
+                "u.name_index = v.name_index".into(),
+            ])
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+        ];
+
+        verify_update_results(&rows, &expected).unwrap();
     }
 
-    #[tokio::test]
-    async fn test_update_raw_rejects_multiple_vals_cols_mismatch() {
-        let rivetx_sql = make_mock_sql();
-        let cols: Vec<RivetxString> = vec!["id".into(), "name_id".into()];
-        let vals = vec![
-            vec![Value::from(1u64), Value::from(100i32)], // 2 values, correct
-            vec![Value::from(2u64)],                       // 1 value, wrong
+    async fn test_exec_zero_timeout(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let updates: Vec<TestData> = initial_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 10,
+                name_index: d.name_index / 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        // timeout(0) should use default TIMEOUT
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .timeout(Duration::from_secs(0))
+            .join_on(vec!["index_col".into(), "key_col".into()])
+            .set_expr(vec![
+                "u.name_id = v.name_id".into(),
+                "u.name_index = v.name_index".into(),
+            ])
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 3);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected = vec![
+            TestData {
+                id: 0,
+                index: 0,
+                key: "abc".into(),
+                name_id: 10,
+                name_index: 10,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 1,
+                key: "xyz".into(),
+                name_id: 20,
+                name_index: 20,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
+            TestData {
+                id: 0,
+                index: 2,
+                key: "def".into(),
+                name_id: 30,
+                name_index: 30,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            },
         ];
-        let join_on: Vec<RivetxString> = vec!["id".into()];
-        let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
 
-        let result = update_raw(
-            &rivetx_sql,
+        verify_update_results(&rows, &expected).unwrap();
+    }
+
+    async fn test_exec_multiple_data_items(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+
+        // Insert 5 rows with unique (index_col, key_col) pairs
+        let mut test_data = Vec::new();
+        for i in 0..5 {
+            test_data.push(TestData {
+                id: 0,
+                index: i,
+                key: format!("key_{}", i),
+                name_id: i + 1,
+                name_index: (i + 1) * 100,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            });
+        }
+
+        insert(
+            rivetx_sql,
             &"test_data".into(),
-            &cols,
-            vals,
-            &join_on,
-            &set_expr,
-            0,
-            Duration::from_secs(0),
+            &test_data,
+            2,
+            &"".into(),
+            false,
+            Duration::from_secs(10),
         )
-        .await;
+        .await
+        .unwrap();
 
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(
-            err.contains("does not match cols length"),
-            "Expected error about length mismatch, got: {}",
-            err
-        );
+        // Update all 5 rows with batch_size=2
+        let updates: Vec<TestData> = test_data
+            .iter()
+            .map(|d| TestData {
+                id: 0,
+                index: d.index,
+                key: d.key.clone(),
+                name_id: d.name_id * 100,
+                name_index: d.name_index * 2,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+            .join_on(vec!["index_col".into(), "key_col".into()])
+            .set_expr(vec![
+                "u.name_id = v.name_id".into(),
+                "u.name_index = v.name_index".into(),
+            ])
+            .batch_size(2)
+            .exec()
+            .await
+            .unwrap();
+
+        assert_eq!(result.total_affected, 5);
+
+        let rows = test_data_query_all_no_id(rivetx_sql).await.unwrap();
+        let expected: Vec<TestData> = (0..5)
+            .map(|i| TestData {
+                id: 0,
+                index: i,
+                key: format!("key_{}", i),
+                name_id: (i + 1) * 100,
+                name_index: (i + 1) * 200,
+                curr_time: curr_time.clone(),
+                created_at: zero_naive_date_time(),
+                updated_at: zero_naive_date_time(),
+            })
+            .collect();
+
+        verify_update_results(&rows, &expected).unwrap();
     }
 
     // ────────── Default Constants Tests ──────────
