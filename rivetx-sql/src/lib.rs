@@ -8,11 +8,18 @@ pub mod update;
 pub mod util;
 
 pub mod create_tests;
+#[cfg(test)]
+mod create_test;
 pub mod delete_tests;
+#[cfg(test)]
+mod delete_test;
+pub mod insert_test;
 pub mod insert_tests;
 pub mod insert_tests2;
 pub mod rivetx_sql_tests;
+pub mod select_test;
 pub mod select_tests;
+pub mod update_test;
 pub mod update_tests;
 pub mod util_tests;
 

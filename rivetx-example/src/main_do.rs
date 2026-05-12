@@ -9,6 +9,7 @@ use rivetx_sql::rivetx_sql_tests::rivetx_sql_tests;
 //run --bin rivetx-example
 //test --workspace -- --nocapture
 //+nightly test --workspace -- --nocapture
+//+nightly test --workspace -- --nocapture --test-threads=1
 pub async fn do_main() -> anyhow::Result<()> {
     std::panic::set_hook(Box::new(thread_panic));
 

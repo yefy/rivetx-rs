@@ -12,13 +12,14 @@ pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxString) -> St
     for i in 0..meta.cols.len() {
         let col = &meta.cols[i];
         let sql_type = &meta.sql_types[i];
-        let auto = if meta.auto_col_map.get(col).copied().unwrap_or(false) {
+        let mut fixed_attr = meta.fixed_attrs[i].clone();
+        let auto = if meta.auto_col_map.get(col).copied().unwrap_or(false)
+            && !fixed_attr.contains("CURRENT_TIMESTAMP")
+        {
             "AUTO_INCREMENT"
         } else {
             ""
         };
-
-        let mut fixed_attr = meta.fixed_attrs[i].clone();
         if fixed_attr.is_empty() {
             fixed_attr = "NOT NULL".into()
         }
