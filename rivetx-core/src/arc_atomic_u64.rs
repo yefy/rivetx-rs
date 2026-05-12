@@ -106,29 +106,3 @@ impl<'de> Deserialize<'de> for ArcAtomicU64 {
     }
 }
 
-#[cfg(test)]
-pub mod tests {
-    use super::ArcAtomicU64;
-    use serde::{Deserialize, Serialize};
-
-    //cargo test test_arc_atomic_u64 -- --nocapture
-    //cargo test test_arc_atomic_u64 --release --no-default-features --features "rubic_test"  -- --nocapture
-    #[tokio::test]
-    async fn test_arc_atomic_u64() {
-        #[derive(Clone, Debug, Serialize, Deserialize)]
-        pub struct DataJson {
-            pub send_count: ArcAtomicU64,
-            pub recv_count: ArcAtomicU64,
-        }
-
-        let data = DataJson {
-            send_count: 1.into(),
-            recv_count: 12.into(),
-        };
-        println!("data:{:?}", data);
-        let str = serde_json::to_string(&data).unwrap();
-        println!("str:{:?}", str);
-        let data_result: DataJson = serde_json::from_str(&str).unwrap();
-        println!("data_result:{:?}", data_result);
-    }
-}

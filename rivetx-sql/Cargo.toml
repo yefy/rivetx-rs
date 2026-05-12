@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 rivetx-sql-derive = { path = "../rivetx-sql-derive" }
-tokio = "1.32.0"
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
 anyhow = "1.0.102"
 #anyhow = { git = "https://github.com/yefy/anyhow.git" }
