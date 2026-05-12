@@ -11,7 +11,7 @@ use mysql_async::prelude::Queryable;
 use mysql_async::Value;
 use std::time::Duration;
 
-/// 入口函数，依次执行所有 insert 测试
+/// Entry point: runs all insert tests in sequence.
 pub async fn test_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     test_batch_insert(rivetx_sql).await?;
     test_batch_insert_struct(rivetx_sql).await?;
@@ -22,7 +22,7 @@ pub async fn test_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     Ok(())
 }
 
-/// 测试 insert_raw：批量插入 + ON DUPLICATE KEY UPDATE
+/// Test `insert_raw`: batch insert + `ON DUPLICATE KEY UPDATE`.
 pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -73,7 +73,7 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
         return Err(anyhow!("expected 10 rows, got {}", count));
     }
 
-    // 测试 ON DUPLICATE KEY UPDATE
+    // Verify `ON DUPLICATE KEY UPDATE`.
     let vals_dup = vec![vec![
         Value::from(0),
         Value::from("abc"),
@@ -122,7 +122,7 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     Ok(())
 }
 
-/// 测试 InsertBuilder：批量插入结构体 + ON DUPLICATE KEY UPDATE
+/// Test `InsertBuilder`: batch insert structs + `ON DUPLICATE KEY UPDATE`.
 pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -161,7 +161,7 @@ pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> {
     Ok(())
 }
 
-/// 测试 insert_raw：批量插入，不使用 ON DUPLICATE KEY UPDATE
+/// Test `insert_raw`: batch insert without `ON DUPLICATE KEY UPDATE`.
 pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -214,7 +214,7 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
     Ok(())
 }
 
-/// 测试 InsertBuilder：插入结构体，不使用 ON DUPLICATE KEY UPDATE
+/// Test `InsertBuilder`: insert structs without `ON DUPLICATE KEY UPDATE`.
 pub async fn test_batch_insert_struct_no_duplicate_update(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -246,7 +246,8 @@ pub async fn test_batch_insert_struct_no_duplicate_update(rivetx_sql: &RivetxSql
     Ok(())
 }
 
-/// 测试 InsertBuilder + insert 函数：批量插入结构体，验证 last_insert_id、total_affected 和数据一致性
+/// Test `InsertBuilder` + `insert`: batch insert structs and validate `last_insert_id`,
+/// `total_affected`, and data consistency.
 pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -278,7 +279,7 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
 
     info!("test_batch_new_insert_struct result:{:?}", result);
 
-    // 验证 last_insert_id
+    // Validate `last_insert_id`.
     let mut conn = rivetx_sql.get_conn().await?;
     let last_id: u64 = conn
         .query_first("SELECT id FROM test_data ORDER BY id DESC LIMIT 1")
@@ -293,7 +294,7 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
         ));
     }
 
-    // 验证 total_affected
+    // Validate `total_affected`.
     let count = test_data_count_rows(rivetx_sql, "test_data").await;
     if count != 10 || count != result.total_affected as usize {
         return Err(anyhow!(
@@ -303,7 +304,7 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
         ));
     }
 
-    // 验证数据一致性
+    // Validate data consistency.
     let db_rows = test_data_query_all_no_id(rivetx_sql).await?;
     if db_rows.len() != test_data.len() {
         return Err(anyhow!(
@@ -323,7 +324,7 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
         }
     }
 
-    // 测试 ON DUPLICATE KEY UPDATE 通过 insert 函数
+    // Verify `ON DUPLICATE KEY UPDATE` via the `insert` function.
     let data_dup = vec![TestData {
         id: 0,
         index: 0,
@@ -367,7 +368,8 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
     Ok(())
 }
 
-/// 测试 InsertBuilder：批量插入结构体（指针语义），验证 last_insert_id 和数据一致性
+/// Test `InsertBuilder`: batch insert structs (pointer semantics) and validate `last_insert_id`
+/// and data consistency.
 pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Result<()> {
     test_data_create_table(rivetx_sql).await?;
     test_data_truncate_table(rivetx_sql).await?;
@@ -399,7 +401,7 @@ pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Resul
 
     info!("test_batch_new_insert_struct_point result:{:?}", result);
 
-    // 验证 last_insert_id
+    // Validate `last_insert_id`.
     let mut conn = rivetx_sql.get_conn().await?;
     let last_id: u64 = conn
         .query_first("SELECT id FROM test_data ORDER BY id DESC LIMIT 1")
@@ -414,13 +416,13 @@ pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Resul
         ));
     }
 
-    // 验证行数
+    // Validate row count.
     let count = test_data_count_rows(rivetx_sql, "test_data").await;
     if count != 10 {
         return Err(anyhow!("expected 10 rows, got {}", count));
     }
 
-    // 验证数据一致性
+    // Validate data consistency.
     let rows = test_data_query_all_no_id(rivetx_sql).await?;
     for (i, row) in rows.iter().enumerate() {
         if row.index != test_data[i].index {
