@@ -42,15 +42,17 @@ impl TaskGroup {
 
     pub async fn wait(&self) -> anyhow::Result<()> {
         loop {
-            let ret = tokio::time::timeout(tokio::time::Duration::from_secs(1), self.data
-                .await_group
-                .wait()).await;
+            let ret = tokio::time::timeout(
+                tokio::time::Duration::from_secs(1),
+                self.data.await_group.wait(),
+            )
+            .await;
             match ret {
                 Ok(Ok(())) => return Ok(()),
                 Ok(Err(e)) => return Err(anyhow::anyhow!("err:{}", e)),
                 Err(_) => {
                     let _ = self.data.quit_tx.send(true);
-                },
+                }
             }
         }
     }

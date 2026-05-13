@@ -207,8 +207,8 @@ fn test_arc_string_slice_middle() {
 #[test]
 fn test_arc_string_slice_nested() {
     let a = s("abcdefgh");
-    let slice1 = a.slice(3..7);       // "defg"
-    let slice2 = slice1.slice(1..3);  // "ef"
+    let slice1 = a.slice(3..7); // "defg"
+    let slice2 = slice1.slice(1..3); // "ef"
     assert_eq!(slice2.as_str(), "ef");
     assert_eq!(slice2.len(), 2);
 }

@@ -15,8 +15,9 @@ rivetx-core = { path = "../rivetx-core" }
 mysql_async = "0.34.2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
-anyhow = "1.0.102"
-#anyhow = { git = "https://github.com/yefy/anyhow.git" }
+#anyhow = "1.0.102"
+anyhow = { git = "https://github.com/yefy/anyhow.git", features = ["full"]}
+#anyhow = { path = "../anyhow" }
 log4rs = { git = "https://github.com/yefy/log4rs.git" }
 scopeguard = "1.2.0"
 moka = { version = "0.12.10", features = ["sync", "future"] }

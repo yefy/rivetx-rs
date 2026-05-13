@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::create::generate_create_table_sql;
-    use crate::util_tests::{TestData, Testkey, test_data_drop_table};
+    use crate::util_tests::{test_data_drop_table, TestData, Testkey};
 
     // ────────── Basic SQL Generation ──────────
 
@@ -15,7 +15,9 @@ mod tests {
         assert!(sql.contains("name_index INT NOT NULL ,"));
         assert!(sql.contains("curr_time DATETIME NOT NULL ,"));
         assert!(sql.contains("created_at DATETIME DEFAULT CURRENT_TIMESTAMP ,"));
-        assert!(sql.contains("updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP ,"));
+        assert!(sql.contains(
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP ,"
+        ));
         assert!(sql.contains("PRIMARY KEY (id)"));
         assert!(sql.contains("UNIQUE INDEX u_td_ik ( index_col, key_col)"));
         assert!(sql.contains("UNIQUE INDEX u_td_in ( index_col, name_id)"));
@@ -33,7 +35,9 @@ mod tests {
         assert!(sql.contains("id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,"));
         assert!(sql.contains("key_col VARCHAR(255) NOT NULL ,"));
         assert!(sql.contains("created_at DATETIME DEFAULT CURRENT_TIMESTAMP ,"));
-        assert!(sql.contains("updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP ,"));
+        assert!(sql.contains(
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP ,"
+        ));
         assert!(sql.contains("PRIMARY KEY (id)"));
         assert!(!sql.contains("created_at DATETIME DEFAULT CURRENT_TIMESTAMP AUTO_INCREMENT"));
         assert!(!sql.contains("updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AUTO_INCREMENT"));
@@ -101,19 +105,17 @@ mod tests {
         // The last column/index definition before closing paren should not end with comma
         let body = &sql[sql.find('(').unwrap() + 1..sql.rfind(')').unwrap()];
         let trimmed = body.trim();
-        assert!(!trimmed.ends_with(','), "SQL body should not end with trailing comma");
+        assert!(
+            !trimmed.ends_with(','),
+            "SQL body should not end with trailing comma"
+        );
     }
 
     // ────────── Various Table Names ──────────
 
     #[test]
     fn test_create_table_sql_handles_various_table_names() {
-        let names = vec![
-            "test_data",
-            "users",
-            "orders_v2",
-            "my_table_123",
-        ];
+        let names = vec!["test_data", "users", "orders_v2", "my_table_123"];
 
         for name in names {
             let sql = generate_create_table_sql::<TestData>(&name.into());
@@ -140,7 +142,7 @@ mod tests {
         let sql = generate_create_table_sql::<TestData>(&"test_data".into());
 
         let parts: Vec<&str> = sql.split(',').collect();
-        
+
         for part in parts {
             if part.contains("CURRENT_TIMESTAMP") {
                 assert!(
@@ -229,7 +231,7 @@ mod tests {
     fn test_create_table_sql_column_order() {
         let sql = generate_create_table_sql::<TestData>(&"test_data".into());
 
-        // Extract column definitions between CREATE TABLE (...) 
+        // Extract column definitions between CREATE TABLE (...)
         let start = sql.find('(').unwrap() + 1;
         let end = sql.rfind(')').unwrap();
         let body = &sql[start..end];
@@ -256,9 +258,7 @@ mod tests {
 
     use crate::conn::RivetxSql;
     use crate::create::create_table;
-    use crate::util_tests::{
-        test_key_drop_table, test_open_rivetx_sql,
-    };
+    use crate::util_tests::{test_key_drop_table, test_open_rivetx_sql};
     use mysql_async::prelude::Queryable;
     use std::time::Duration;
 
@@ -442,7 +442,10 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(!tables.is_empty(), "test_data table should exist after idempotent create");
+        assert!(
+            !tables.is_empty(),
+            "test_data table should exist after idempotent create"
+        );
 
         // Cleanup
         let _ = test_data_drop_table(&rivetx_sql).await;
@@ -469,7 +472,10 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(!tables.is_empty(), "test_key table was not created with timeout");
+        assert!(
+            !tables.is_empty(),
+            "test_key table was not created with timeout"
+        );
 
         // Create with longer timeout (10 seconds)
         let _ = test_key_drop_table(&rivetx_sql).await;
@@ -484,7 +490,10 @@ mod tests {
             )
             .await
             .unwrap();
-        assert!(!tables.is_empty(), "test_key table was not created with longer timeout");
+        assert!(
+            !tables.is_empty(),
+            "test_key table was not created with longer timeout"
+        );
 
         // Cleanup
         let _ = test_key_drop_table(&rivetx_sql).await;
@@ -500,7 +509,9 @@ mod tests {
 
         // Try with an extremely short timeout (1 millisecond) - this may or may not fail
         // depending on system speed, but the function should handle it gracefully
-        let result = create_table::<TestData>(&rivetx_sql, &"test_data".into(), Duration::from_millis(1)).await;
+        let result =
+            create_table::<TestData>(&rivetx_sql, &"test_data".into(), Duration::from_millis(1))
+                .await;
 
         // Either it succeeds (fast system) or returns a timeout error
         match result {
@@ -511,7 +522,7 @@ mod tests {
             Err(e) => {
                 let err_msg = e.to_string();
                 assert!(
-                    !(err_msg.contains("timed out") || err_msg.contains("timeout")) ,
+                    !(err_msg.contains("timed out") || err_msg.contains("timeout")),
                     "Expected timeout error but got: {}",
                     err_msg
                 );
@@ -544,8 +555,14 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(tables.contains(&"test_data".to_string()), "test_data table was not created");
-        assert!(tables.contains(&"test_key".to_string()), "test_key table was not created");
+        assert!(
+            tables.contains(&"test_data".to_string()),
+            "test_data table was not created"
+        );
+        assert!(
+            tables.contains(&"test_key".to_string()),
+            "test_key table was not created"
+        );
 
         // Cleanup
         let _ = test_data_drop_table(&rivetx_sql).await;

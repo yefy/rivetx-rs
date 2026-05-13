@@ -400,5 +400,3 @@ impl<'a> From<std::borrow::Cow<'a, str>> for ArcString {
         }
     }
 }
-
-

@@ -3,7 +3,7 @@ mod tests {
     use crate::select::{select_raw, SelectBuilder};
     use crate::sql_value::SqlValue;
     use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
-    use crate::util_tests::TestData;
+    use crate::util_tests::{test_open_rivetx_sql_sync, TestData};
     use chrono::Timelike;
     use mysql_async::Value;
     use rivetx_core::rivetx_string::RivetxString;
@@ -24,7 +24,11 @@ mod tests {
         offset: usize,
         batch_size: usize,
     ) -> (String, Vec<SqlValue>) {
-        let effective_batch_size = if batch_size == 0 { BATCH_SIZE } else { batch_size };
+        let effective_batch_size = if batch_size == 0 {
+            BATCH_SIZE
+        } else {
+            batch_size
+        };
         let effective_limit = if limit == 0 { usize::MAX } else { limit };
         let min_limit = std::cmp::min(effective_limit, effective_batch_size);
         let limit_clause = format!(" LIMIT {} OFFSET {}", min_limit, offset);
@@ -122,8 +126,18 @@ mod tests {
     fn test_select_build_with_order() {
         let g = QueryCond::default();
         let fields = ["id", "index_col"];
-        let (sql, _args) =
-            build_select_sql("test_data", "", &fields, &g, "", &[], "ORDER BY id DESC", 0, 0, 0);
+        let (sql, _args) = build_select_sql(
+            "test_data",
+            "",
+            &fields,
+            &g,
+            "",
+            &[],
+            "ORDER BY id DESC",
+            0,
+            0,
+            0,
+        );
 
         assert!(sql.contains("ORDER BY id DESC"));
     }
@@ -151,12 +165,9 @@ mod tests {
     fn test_select_build_with_in_cols_single() {
         let mut g = QueryCond::default();
         g.in_cols.push("id".into());
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from(1u64))]);
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from(2u64))]);
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from(3u64))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from(1u64))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from(2u64))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from(3u64))]);
 
         let fields = ["id", "index_col"];
         let (sql, args) = build_select_sql("test_data", "", &fields, &g, "", &[], "", 0, 0, 0);
@@ -192,10 +203,8 @@ mod tests {
         g.fixed_cols.push("status".into());
         g.fixed_vals.push(SqlValue::from(Value::from(1u8)));
         g.in_cols.push("id".into());
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from(1u64))]);
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from(2u64))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from(1u64))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from(2u64))]);
 
         let fields = ["id"];
         let (sql, args) = build_select_sql(
@@ -227,9 +236,9 @@ mod tests {
         let (sql, _args) = build_select_sql("test_data d", join, &fields, &g, "", &[], "", 0, 0, 0);
 
         assert!(sql.contains("FROM test_data d"));
-        assert!(sql.contains(
-            "JOIN test_key k ON d.index_col = k.index_col AND d.key_col = k.key_col"
-        ));
+        assert!(
+            sql.contains("JOIN test_key k ON d.index_col = k.index_col AND d.key_col = k.key_col")
+        );
     }
 
     #[test]
@@ -238,10 +247,8 @@ mod tests {
         g.fixed_cols.push("d.index_col".into());
         g.fixed_vals.push(SqlValue::from(Value::from(1i32)));
         g.in_cols.push("d.key_col".into());
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from("abc"))]);
-        g.in_vals
-            .push(vec![SqlValue::from(Value::from("def"))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from("abc"))]);
+        g.in_vals.push(vec![SqlValue::from(Value::from("def"))]);
 
         let fields = ["d.id", "d.index_col", "d.key_col"];
         let join = "JOIN test_key k ON d.index_col = k.index_col";
@@ -274,12 +281,7 @@ mod tests {
 
     /// Helper to create a mock RivetxSql for builder construction.
     fn make_mock_sql() -> crate::conn::RivetxSql {
-        crate::conn::RivetxSql::new(
-            "mysql://root:Yfygz@389@192.168.192.139:3306/test_db",
-            1,
-            1,
-        )
-        .expect("Failed to create mock RivetxSql")
+        test_open_rivetx_sql_sync().expect("Failed to create mock RivetxSql")
     }
 
     /// Helper: insert initial test data for select tests
@@ -536,15 +538,9 @@ mod tests {
             .where_eq("index_col", 1i32)
             .where_in(
                 vec!["key_col".into()],
-                vec![
-                    vec!["abc".into()],
-                    vec!["def".into()],
-                ],
+                vec![vec!["abc".into()], vec!["def".into()]],
             )
-            .where_cond(
-                "name_id > ?",
-                vec![SqlValue::from(Value::from(50i32))],
-            )
+            .where_cond("name_id > ?", vec![SqlValue::from(Value::from(50i32))])
             .order("order by key_col")
             .limit(10)
             .offset(0)
@@ -572,10 +568,7 @@ mod tests {
             .where_eq("index_col", 1i32)
             .where_in(
                 vec!["key_col".into()],
-                vec![
-                    vec!["abc".into()],
-                    vec!["def".into()],
-                ],
+                vec![vec!["abc".into()], vec!["def".into()]],
             )
             .order("order by key_col")
             .exec()
@@ -917,8 +910,7 @@ mod tests {
         cond.in_cols.push("key_col".into());
         cond.in_cols.push("name_id".into());
         // Each in_vals row should have 2 elements, but we provide only 1
-        cond.in_vals
-            .push(vec![SqlValue::from(Value::from("abc"))]);
+        cond.in_vals.push(vec![SqlValue::from(Value::from("abc"))]);
 
         let result = select_raw::<TestData>(
             &rivetx_sql,
@@ -1040,8 +1032,7 @@ mod tests {
         cond.fixed_cols.push("id".into());
         cond.fixed_vals.push(SqlValue::from(Value::from(1u64)));
         cond.in_cols.push("key_col".into());
-        cond.in_vals
-            .push(vec![SqlValue::from(Value::from("abc"))]);
+        cond.in_vals.push(vec![SqlValue::from(Value::from("abc"))]);
         cond.in_batch_size = 100;
 
         assert_eq!(cond.fixed_cols.len(), 1);
@@ -1172,14 +1163,8 @@ mod tests {
 
     #[test]
     fn test_build_query_with_multi_col_in_tuples() {
-        let in_cols = vec![
-            RivetxString::from("key_col"),
-            RivetxString::from("name_id"),
-        ];
-        let tuples = vec![
-            RivetxString::from("(?,?)"),
-            RivetxString::from("(?,?)"),
-        ];
+        let in_cols = vec![RivetxString::from("key_col"), RivetxString::from("name_id")];
+        let tuples = vec![RivetxString::from("(?,?)"), RivetxString::from("(?,?)")];
         let sql = build_query(
             &["SELECT", "*", "FROM"],
             "test_data",

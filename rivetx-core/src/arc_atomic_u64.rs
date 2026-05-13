@@ -105,4 +105,3 @@ impl<'de> Deserialize<'de> for ArcAtomicU64 {
         Ok(ArcAtomicU64::new(s))
     }
 }
-

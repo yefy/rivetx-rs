@@ -426,7 +426,12 @@ pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Resul
     let rows = test_data_query_all_no_id(rivetx_sql).await?;
     for (i, row) in rows.iter().enumerate() {
         if row.index != test_data[i].index {
-            return Err(anyhow!("row {} index mismatch: {} != {}", i, row.index, test_data[i].index));
+            return Err(anyhow!(
+                "row {} index mismatch: {} != {}",
+                i,
+                row.index,
+                test_data[i].index
+            ));
         }
     }
 

@@ -24,9 +24,7 @@ pub async fn test_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
 }
 
 /// Verify that test_data table was created with correct structure
-pub async fn test_verify_test_data_table_structure(
-    rivetx_sql: &RivetxSql,
-) -> anyhow::Result<()> {
+pub async fn test_verify_test_data_table_structure(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
     let mut conn = rivetx_sql.conn().await?;
 
     // Check if table exists
@@ -109,9 +107,7 @@ pub async fn test_verify_test_data_table_structure(
 }
 
 /// Verify that test_key table was created with correct structure
-pub async fn test_verify_test_key_table_structure(
-    rivetx_sql: &RivetxSql,
-) -> anyhow::Result<()> {
+pub async fn test_verify_test_key_table_structure(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
     let mut conn = rivetx_sql.conn().await?;
 
     // Check if table exists
@@ -184,7 +180,10 @@ pub async fn test_create_table_with_timeout(rivetx_sql: &RivetxSql) -> anyhow::R
     let tables: Vec<String> = conn
         .query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'test_key'")
         .await?;
-    assert!(!tables.is_empty(), "test_key table was not created with timeout");
+    assert!(
+        !tables.is_empty(),
+        "test_key table was not created with timeout"
+    );
 
     log::info!("create_table with timeout test passed");
     Ok(())

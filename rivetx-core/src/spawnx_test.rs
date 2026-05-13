@@ -77,20 +77,15 @@ async fn test_tokio_batch_spawn_add_flush_close_triggers_worker() {
     let executed = Arc::new(AtomicBool::new(false));
     let executed_clone = executed.clone();
 
-    tokio_batch_spawn(
-        &name,
-        2,
-        Duration::from_millis(1),
-        move |datas| {
-            let executed = executed_clone.clone();
-            async move {
-                if !datas.is_empty() {
-                    executed.store(true, Ordering::SeqCst);
-                }
-                Ok(())
+    tokio_batch_spawn(&name, 2, Duration::from_millis(1), move |datas| {
+        let executed = executed_clone.clone();
+        async move {
+            if !datas.is_empty() {
+                executed.store(true, Ordering::SeqCst);
             }
-        },
-    );
+            Ok(())
+        }
+    });
 
     tokio_batch_add(&name, Box::new(1_i32)).await;
     tokio_batch_add(&name, Box::new(2_i32)).await;
@@ -113,21 +108,17 @@ async fn test_tokio_list_spawn_add_close_runs_consumer() {
     let executed = Arc::new(AtomicBool::new(false));
     let executed_clone = executed.clone();
 
-    tokio_list_spawn(
-        &name,
-        2,
-        move |data| {
-            let executed = executed_clone.clone();
-            async move {
-                if let Some(data) = data {
-                    let value = data.downcast::<i32>().unwrap();
-                    assert_eq!(*value, 1);
-                    executed.store(true, Ordering::SeqCst);
-                }
-                Ok(())
+    tokio_list_spawn(&name, 2, move |data| {
+        let executed = executed_clone.clone();
+        async move {
+            if let Some(data) = data {
+                let value = data.downcast::<i32>().unwrap();
+                assert_eq!(*value, 1);
+                executed.store(true, Ordering::SeqCst);
             }
-        },
-    );
+            Ok(())
+        }
+    });
 
     tokio_list_add(&name, Box::new(1_i32)).await;
     tokio_list_close(&name).await;
@@ -148,18 +139,13 @@ async fn test_tokio_timer_spawn_quits_after_first_call() {
     let executed = Arc::new(AtomicBool::new(false));
     let executed_clone = executed.clone();
 
-    tokio_timer_spawn(
-        &name,
-        false,
-        Duration::from_millis(1),
-        move || {
-            let executed = executed_clone.clone();
-            async move {
-                executed.store(true, Ordering::SeqCst);
-                (true, Ok(()))
-            }
-        },
-    );
+    tokio_timer_spawn(&name, false, Duration::from_millis(1), move || {
+        let executed = executed_clone.clone();
+        async move {
+            executed.store(true, Ordering::SeqCst);
+            (true, Ok(()))
+        }
+    });
 
     let result = tokio::time::timeout(Duration::from_secs(1), async {
         while !executed.load(Ordering::SeqCst) {

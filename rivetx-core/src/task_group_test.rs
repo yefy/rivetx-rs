@@ -321,7 +321,7 @@ async fn test_task_group_subscribe() {
         let _wgg = wgg;
         let mut rx = tg2.subscribe();
         let result = rx.recv().await;
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), true);
     });

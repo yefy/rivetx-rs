@@ -55,7 +55,10 @@ dependencies = [
 [[package]]
 name = "anyhow"
 version = "1.0.45"
-source = "git+https://github.com/yefy/anyhow.git#8eecd77753358ec0bf64489f9af6cae7eb209a2d"
+source = "git+https://github.com/yefy/anyhow.git#175bc650431418da1f6ca0305cb0889c7e4e2805"
+dependencies = [
+ "backtrace",
+]
 
 [[package]]
 name = "anyhow"
@@ -1914,7 +1917,7 @@ dependencies = [
 name = "rivetx-core"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.45",
  "async-channel",
  "awaitgroup",
  "backtrace",
@@ -1935,7 +1938,7 @@ dependencies = [
 name = "rivetx-example"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.45",
  "axum",
  "linked-hash-map",
  "log",
@@ -1955,7 +1958,7 @@ dependencies = [
 name = "rivetx-sql"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.45",
  "chrono",
  "futures",
  "log",

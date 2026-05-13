@@ -37,9 +37,20 @@ fn test_arc_atomic_i32_display_debug() {
 fn test_arc_atomic_i32_try_from_value_ok() {
     assert_eq!(ArcAtomicI32::try_from(Value::Int(1)).unwrap().as_i32(), 1);
     assert_eq!(ArcAtomicI32::try_from(Value::UInt(2)).unwrap().as_i32(), 2);
-    assert_eq!(ArcAtomicI32::try_from(Value::Float(3.0)).unwrap().as_i32(), 3);
-    assert_eq!(ArcAtomicI32::try_from(Value::Double(4.0)).unwrap().as_i32(), 4);
-    assert_eq!(ArcAtomicI32::try_from(Value::Bytes(b"5".to_vec())).unwrap().as_i32(), 5);
+    assert_eq!(
+        ArcAtomicI32::try_from(Value::Float(3.0)).unwrap().as_i32(),
+        3
+    );
+    assert_eq!(
+        ArcAtomicI32::try_from(Value::Double(4.0)).unwrap().as_i32(),
+        4
+    );
+    assert_eq!(
+        ArcAtomicI32::try_from(Value::Bytes(b"5".to_vec()))
+            .unwrap()
+            .as_i32(),
+        5
+    );
 }
 
 #[test]

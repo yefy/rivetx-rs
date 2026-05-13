@@ -5,7 +5,7 @@ mod tests {
     use crate::util::{BATCH_SIZE, TIMEOUT};
     use crate::util_tests::{
         test_data_clear_table, test_data_create_table, test_data_query_all_no_id,
-        zero_naive_date_time, TestData,
+        test_open_rivetx_sql_sync, zero_naive_date_time, TestData,
     };
     use anyhow::Result;
     use chrono::Timelike;
@@ -81,8 +81,7 @@ mod tests {
                 Value::from(20i32),
             ],
         ];
-        let join_on: Vec<RivetxString> =
-            vec!["index_col".into(), "key_col".into()];
+        let join_on: Vec<RivetxString> = vec!["index_col".into(), "key_col".into()];
         let set_expr: Vec<RivetxString> = vec![
             "u.name_id = v.name_id".into(),
             "u.name_index = u.name_index + v.name_index".into(),
@@ -93,7 +92,9 @@ mod tests {
         assert!(sql.starts_with("UPDATE test_data AS u JOIN (VALUES"));
         assert!(sql.contains("AS v(index_col, key_col, name_id, name_index)"));
         assert!(sql.contains("ON u.index_col = v.index_col AND u.key_col = v.key_col"));
-        assert!(sql.contains("SET u.name_id = v.name_id, u.name_index = u.name_index + v.name_index"));
+        assert!(
+            sql.contains("SET u.name_id = v.name_id, u.name_index = u.name_index + v.name_index")
+        );
         assert_eq!(args.len(), 8); // 2 rows * 4 cols
     }
 
@@ -136,9 +137,7 @@ mod tests {
     #[test]
     fn test_update_build_with_custom_batch_size() {
         let cols: Vec<RivetxString> = vec!["id".into()];
-        let vals: Vec<Vec<Value>> = (0..10)
-            .map(|i| vec![Value::from(i as u64)])
-            .collect();
+        let vals: Vec<Vec<Value>> = (0..10).map(|i| vec![Value::from(i as u64)]).collect();
         let join_on: Vec<RivetxString> = vec!["id".into()];
         let set_expr: Vec<RivetxString> = vec!["u.name_id = v.name_id".into()];
 
@@ -146,7 +145,10 @@ mod tests {
         let (sql, args) = build_update_sql("test_data", &cols, &vals, &join_on, &set_expr, 3);
 
         let row_count = sql.matches("ROW(").count();
-        assert_eq!(row_count, 3, "Expected 3 ROW(...) entries with batch_size=3");
+        assert_eq!(
+            row_count, 3,
+            "Expected 3 ROW(...) entries with batch_size=3"
+        );
         assert_eq!(args.len(), 3);
     }
 
@@ -175,10 +177,11 @@ mod tests {
             vec!["index_col".into(), "key_col".into(), "name_id".into()];
         let set_expr: Vec<RivetxString> = vec!["u.name_index = v.name_index".into()];
 
-        let (sql, _args) =
-            build_update_sql("test_data", &cols, &vals, &join_on, &set_expr, 0);
+        let (sql, _args) = build_update_sql("test_data", &cols, &vals, &join_on, &set_expr, 0);
 
-        assert!(sql.contains("ON u.index_col = v.index_col AND u.key_col = v.key_col AND u.name_id = v.name_id"));
+        assert!(sql.contains(
+            "ON u.index_col = v.index_col AND u.key_col = v.key_col AND u.name_id = v.name_id"
+        ));
     }
 
     // ────────── UpdateResult Tests ──────────
@@ -228,12 +231,7 @@ mod tests {
 
     /// Helper to create a mock RivetxSql for builder construction.
     fn make_mock_sql() -> crate::conn::RivetxSql {
-        crate::conn::RivetxSql::new(
-            "mysql://root:Yfygz@389@192.168.192.139:3306/test_db",
-            1,
-            1,
-        )
-        .expect("Failed to create mock RivetxSql")
+        test_open_rivetx_sql_sync().expect("Failed to create mock RivetxSql")
     }
 
     /// Helper: insert initial test data for update tests
@@ -289,10 +287,7 @@ mod tests {
     }
 
     /// Helper: verify update results match expected values
-    fn verify_update_results(
-        rows: &[TestData],
-        expected: &[TestData],
-    ) -> Result<()> {
+    fn verify_update_results(rows: &[TestData], expected: &[TestData]) -> Result<()> {
         if rows.len() != expected.len() {
             anyhow::bail!(
                 "len(rows) {} != len(expected) {}",
@@ -302,12 +297,7 @@ mod tests {
         }
         for (i, row) in rows.iter().enumerate() {
             if row != &expected[i] {
-                anyhow::bail!(
-                    "row {} mismatch: got {:?}, want {:?}",
-                    i,
-                    row,
-                    expected[i]
-                );
+                anyhow::bail!("row {} mismatch: got {:?}, want {:?}", i, row, expected[i]);
             }
         }
         Ok(())

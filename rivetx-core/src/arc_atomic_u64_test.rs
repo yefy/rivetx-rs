@@ -37,9 +37,20 @@ fn test_arc_atomic_u64_display_debug() {
 fn test_arc_atomic_u64_try_from_value_ok() {
     assert_eq!(ArcAtomicU64::try_from(Value::Int(1)).unwrap().as_u64(), 1);
     assert_eq!(ArcAtomicU64::try_from(Value::UInt(2)).unwrap().as_u64(), 2);
-    assert_eq!(ArcAtomicU64::try_from(Value::Float(3.0)).unwrap().as_u64(), 3);
-    assert_eq!(ArcAtomicU64::try_from(Value::Double(4.0)).unwrap().as_u64(), 4);
-    assert_eq!(ArcAtomicU64::try_from(Value::Bytes(b"5".to_vec())).unwrap().as_u64(), 5);
+    assert_eq!(
+        ArcAtomicU64::try_from(Value::Float(3.0)).unwrap().as_u64(),
+        3
+    );
+    assert_eq!(
+        ArcAtomicU64::try_from(Value::Double(4.0)).unwrap().as_u64(),
+        4
+    );
+    assert_eq!(
+        ArcAtomicU64::try_from(Value::Bytes(b"5".to_vec()))
+            .unwrap()
+            .as_u64(),
+        5
+    );
 }
 
 #[test]

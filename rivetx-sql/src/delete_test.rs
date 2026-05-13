@@ -97,7 +97,10 @@ mod tests {
 
         let (sql, args) = build_delete_sql("test_data", &g, "", 0).unwrap();
 
-        assert_eq!(sql, "DELETE FROM test_data WHERE key_col = ? AND name_id = ?");
+        assert_eq!(
+            sql,
+            "DELETE FROM test_data WHERE key_col = ? AND name_id = ?"
+        );
         assert_eq!(args.len(), 2);
     }
 
@@ -111,10 +114,7 @@ mod tests {
 
         let (sql, args) = build_delete_sql("test_data", &g, "", 0).unwrap();
 
-        assert_eq!(
-            sql,
-            "DELETE FROM test_data WHERE id IN ((?), (?), (?))"
-        );
+        assert_eq!(sql, "DELETE FROM test_data WHERE id IN ((?), (?), (?))");
         assert_eq!(args.len(), 3);
     }
 
@@ -245,7 +245,10 @@ mod tests {
         let _guard = lock_test_data();
         let rivetx_sql = test_open_rivetx_sql().await?;
         // This should error because fixed/in/cond are all empty.
-        assert!(DeleteBuilder::new(&rivetx_sql, "test_data").exec().await.is_err());
+        assert!(DeleteBuilder::new(&rivetx_sql, "test_data")
+            .exec()
+            .await
+            .is_err());
         Ok(())
     }
 
@@ -389,7 +392,10 @@ mod tests {
         test_data_create_table(&rivetx_sql).await?;
         test_data_clear_table(&rivetx_sql).await?;
 
-        let now = chrono::Local::now().naive_local().with_nanosecond(0).unwrap();
+        let now = chrono::Local::now()
+            .naive_local()
+            .with_nanosecond(0)
+            .unwrap();
         let mut rows = Vec::new();
         for i in 0..6 {
             rows.push(TestData {
@@ -522,7 +528,10 @@ mod tests {
         test_data_create_table(rivetx_sql).await?;
         test_data_clear_table(rivetx_sql).await?;
 
-        let now = chrono::Local::now().naive_local().with_nanosecond(0).unwrap();
+        let now = chrono::Local::now()
+            .naive_local()
+            .with_nanosecond(0)
+            .unwrap();
         let rows = vec![
             TestData {
                 id: 0,

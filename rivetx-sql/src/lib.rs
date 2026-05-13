@@ -7,12 +7,12 @@ pub mod sql_value;
 pub mod update;
 pub mod util;
 
-pub mod create_tests;
 #[cfg(test)]
 mod create_test;
-pub mod delete_tests;
+pub mod create_tests;
 #[cfg(test)]
 mod delete_test;
+pub mod delete_tests;
 pub mod insert_test;
 pub mod insert_tests;
 pub mod insert_tests2;
@@ -21,6 +21,8 @@ pub mod select_test;
 pub mod select_tests;
 pub mod update_test;
 pub mod update_tests;
+#[cfg(test)]
+mod util_test;
 pub mod util_tests;
 
 pub use rivetx_sql_derive::FromSqlRow;

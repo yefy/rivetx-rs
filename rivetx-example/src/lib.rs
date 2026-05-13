@@ -1,3 +1,4 @@
+pub mod anyhow_tests;
 pub mod linked_hash_map_tests;
 pub mod log4_tests;
 pub mod main_do;
