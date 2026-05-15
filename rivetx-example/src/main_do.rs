@@ -2,7 +2,7 @@ use crate::anyhow_tests::anyhow_tests;
 use crate::linked_hash_map_tests::linked_hash_map_tests;
 use crate::log4_tests;
 use crate::moka_tests::moka_tests;
-use anyhow::Ctx;
+use anyhow::Context;
 use rivetx_core::rivetx_string_tests::rivetx_string_tests;
 use rivetx_core::spawnx_tests::spawnx_tests;
 use rivetx_core::thread_panic::thread_panic;
@@ -16,7 +16,7 @@ use rivetx_sql::rivetx_sql_tests::rivetx_sql_tests;
 pub async fn do_main() -> anyhow::Result<()> {
     std::panic::set_hook(Box::new(thread_panic));
 
-    let log4_handle = log4_tests::init_file("./conf/log4rs.yaml").ctx()?;
+    let log4_handle = log4_tests::init_file("./conf/log4rs.yaml").here()?;
     log4_tests::http_server(58080, log4_handle)?;
 
     #[cfg(unix)]
@@ -30,22 +30,22 @@ pub async fn do_main() -> anyhow::Result<()> {
     log::info!("do_main start");
 
     log::info!("anyhow_tests");
-    anyhow_tests().await.ctx()?;
+    anyhow_tests().await.here()?;
 
     log::info!("rivetx_sql_tests");
-    rivetx_sql_tests().await.ctx()?;
+    rivetx_sql_tests().await.here()?;
 
     log::info!("spawnx_tests");
-    spawnx_tests().await.ctx()?;
+    spawnx_tests().await.here()?;
 
     log::info!("linked_hash_map_tests");
-    linked_hash_map_tests().await.ctx()?;
+    linked_hash_map_tests().await.here()?;
 
     log::info!("moka_tests");
-    moka_tests().await.ctx()?;
+    moka_tests().await.here()?;
 
     log::info!("rivetx_string_tests");
-    rivetx_string_tests().await.ctx()?;
+    rivetx_string_tests().await.here()?;
 
     log::info!("do_main end");
 

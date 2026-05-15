@@ -1,11 +1,11 @@
-use anyhow::{Context, Ctx};
+use anyhow::Context;
 
 pub fn test_a() -> anyhow::Result<()> {
     return Err(anyhow::anyhow!("test_a"));
 }
 
 pub fn test_b() -> anyhow::Result<()> {
-    test_a().ctx()?;
+    test_a().here()?;
     Ok(())
 }
 
@@ -15,7 +15,7 @@ pub fn test_c() -> anyhow::Result<()> {
 }
 
 pub fn test_d() -> anyhow::Result<()> {
-    test_c().ctx_msg("test_d")?;
+    test_c().context("test_d")?;
     Ok(())
 }
 
@@ -30,12 +30,12 @@ pub fn test_f() -> anyhow::Result<()> {
 }
 
 pub fn test_g() -> anyhow::Result<()> {
-    test_f().with_ctx(|| "test_g")?;
+    test_f().with_context(|| "test_g")?;
     Ok(())
 }
 
 pub async fn anyhow_tests() -> anyhow::Result<()> {
-    let ret = test_g().ctx_msg("do_main");
+    let ret = test_g().here();
     if let Err(e) = ret {
         log::info!("anyhow_tests display:{}", e);
         log::info!("anyhow_tests debug:{:?}", e);

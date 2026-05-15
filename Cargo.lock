@@ -54,17 +54,14 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.45"
-source = "git+https://github.com/yefy/anyhow.git#175bc650431418da1f6ca0305cb0889c7e4e2805"
-dependencies = [
- "backtrace",
-]
+version = "1.0.102"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "anyhow"
 version = "1.0.102"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+source = "git+https://github.com/yefy/anyhow.git#d9103a91ebd6a26756644e322fc46ca6af1ee46c"
 
 [[package]]
 name = "arc-swap"
@@ -120,7 +117,7 @@ name = "awaitgroup"
 version = "0.6.0"
 source = "git+https://github.com/yefy/awaitgroup.git#4d6346e68edc6dfa33503017857c37197865c5d9"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102 (git+https://github.com/yefy/anyhow.git)",
  "log",
 ]
 
@@ -1315,7 +1312,7 @@ name = "log4rs"
 version = "1.3.0"
 source = "git+https://github.com/yefy/log4rs.git#939149c07d39937ef1bac9da554937d6f1869522"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "arc-swap",
  "async-channel",
  "chrono",
@@ -1917,7 +1914,7 @@ dependencies = [
 name = "rivetx-core"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102 (git+https://github.com/yefy/anyhow.git)",
  "async-channel",
  "awaitgroup",
  "backtrace",
@@ -1938,7 +1935,7 @@ dependencies = [
 name = "rivetx-example"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102 (git+https://github.com/yefy/anyhow.git)",
  "axum",
  "linked-hash-map",
  "log",
@@ -1958,7 +1955,7 @@ dependencies = [
 name = "rivetx-sql"
 version = "0.1.0"
 dependencies = [
- "anyhow 1.0.45",
+ "anyhow 1.0.102 (git+https://github.com/yefy/anyhow.git)",
  "chrono",
  "futures",
  "log",
@@ -2773,7 +2770,7 @@ version = "0.244.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb0e353e6a2fbdc176932bbaab493762eb1255a7900fe0fea1a2f96c296cc909"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "indexmap",
  "wasm-encoder",
  "wasmparser",
@@ -2993,7 +2990,7 @@ version = "0.51.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea61de684c3ea68cb082b7a88508a8b27fcc8b797d738bfc99a82facf1d752dc"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "heck",
  "wit-parser",
 ]
@@ -3004,7 +3001,7 @@ version = "0.51.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7c566e0f4b284dd6561c786d9cb0142da491f46a9fbed79ea69cdad5db17f21"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "heck",
  "indexmap",
  "prettyplease",
@@ -3020,7 +3017,7 @@ version = "0.51.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c0f9bfd77e6a48eccf51359e3ae77140a7f50b1e2ebfe62422d8afdaffab17a"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "prettyplease",
  "proc-macro2",
  "quote",
@@ -3035,7 +3032,7 @@ version = "0.244.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d66ea20e9553b30172b5e831994e35fbde2d165325bec84fc43dbf6f4eb9cb2"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags",
  "indexmap",
  "log",
@@ -3054,7 +3051,7 @@ version = "0.244.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ecc8ac4bc1dc3381b7f59c34f00b67e18f910c2c0f50015669dde7def656a736"
 dependencies = [
- "anyhow 1.0.102",
+ "anyhow 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "id-arena",
  "indexmap",
  "log",
