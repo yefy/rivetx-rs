@@ -131,17 +131,12 @@ impl crate::select::OrderFieldSelectValue for Testkey {
 }
 
 pub async fn test_open_rivetx_sql() -> anyhow::Result<RivetxSql> {
-    let mysql_url = "mysql://root:Yfygz@389@192.168.80.139:3306/test_db".to_string();
-    //let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
-    let max_open_conns = 10;
-    let max_idle_conns = 5;
-    let rivetx_sql = RivetxSql::new(&mysql_url, max_idle_conns, max_open_conns)?;
-    Ok(rivetx_sql)
+    test_open_rivetx_sql_sync()
 }
 
 pub fn test_open_rivetx_sql_sync() -> anyhow::Result<RivetxSql> {
-    let mysql_url = "mysql://root:Yfygz@389@192.168.80.139:3306/test_db".to_string();
-    //let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
+    //let mysql_url = "mysql://root:Yfygz@389@192.168.80.139:3306/test_db".to_string();
+    let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
     let max_open_conns = 10;
     let max_idle_conns = 5;
     let rivetx_sql = RivetxSql::new(&mysql_url, max_idle_conns, max_open_conns)?;
