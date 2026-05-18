@@ -61,7 +61,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 [[package]]
 name = "anyhow"
 version = "1.0.102"
-source = "git+https://github.com/yefy/anyhow.git#d9103a91ebd6a26756644e322fc46ca6af1ee46c"
+source = "git+https://github.com/yefy/anyhow.git#7c03f67c919600cf65bc4d4bb123b9605b62dbe3"
 
 [[package]]
 name = "arc-swap"
