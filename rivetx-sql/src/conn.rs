@@ -1,3 +1,4 @@
+use anyhow::Context;
 use mysql_async::{Conn, Opts, OptsBuilder, Pool, PoolConstraints, PoolOpts};
 use std::sync::Arc;
 
@@ -8,7 +9,7 @@ pub struct RivetxSql {
 
 impl RivetxSql {
     pub fn new(url: &str, max_idle_conns: usize, max_open_conns: usize) -> anyhow::Result<Self> {
-        let opts = Opts::from_url(url)?;
+        let opts = Opts::from_url(url).here()?;
         let constraints = PoolConstraints::new(max_idle_conns, max_open_conns)
             .ok_or(anyhow::anyhow!("PoolConstraints::new"))?;
         let pool_opts = PoolOpts::new().with_constraints(constraints);

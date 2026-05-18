@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 
+use anyhow::Context;
 use crate::spawnx::{
     defer_async, tokio_batch_add, tokio_batch_close, tokio_batch_flush, tokio_batch_spawn,
     tokio_list_add, tokio_list_close, tokio_list_spawn, tokio_spawn, tokio_timer_spawn,
@@ -293,7 +294,7 @@ pub async fn test_tokio_spawn() {
         tokio_spawn(async move {
             tokio_spawn_num.fetch_add(1, Ordering::Relaxed);
             info!("tokio_spawn err test");
-            return Err(anyhow::anyhow!("tokio_spawn err test"))?;
+            return Err(anyhow::anyhow!("tokio_spawn err test")).here()?;
         });
     }
 }
@@ -393,7 +394,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
                     let start_time = chrono::Local::now().timestamp_millis();
                     test_tokio_batch_spawn().await;
-                    WAIT_BATCH.wait().await?;
+                    WAIT_BATCH.wait().await.here()?;
                     let end_time = chrono::Local::now().timestamp_millis();
                     batch_spawn_time.store(end_time - start_time, Ordering::Relaxed);
                     Ok(())
@@ -416,7 +417,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
                     let start_time = chrono::Local::now().timestamp_millis();
                     test_tokio_uniq_spawn().await;
-                    WAIT_UNIQ.wait().await?;
+                    WAIT_UNIQ.wait().await.here()?;
                     let end_time = chrono::Local::now().timestamp_millis();
                     uniq_spawn_time.store(end_time - start_time, Ordering::Relaxed);
                     Ok(())
@@ -439,7 +440,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
                     let start_time = chrono::Local::now().timestamp_millis();
                     test_tokio_list_spawn().await;
-                    WAIT_LIST.wait().await?;
+                    WAIT_LIST.wait().await.here()?;
                     let end_time = chrono::Local::now().timestamp_millis();
                     list_spawn_time.store(end_time - start_time, Ordering::Relaxed);
                     Ok(())
@@ -462,7 +463,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
 
                     let start_time = chrono::Local::now().timestamp_millis();
                     test_tokio_timer_spawn().await;
-                    WAIT_TIMER.wait().await?;
+                    WAIT_TIMER.wait().await.here()?;
                     let end_time = chrono::Local::now().timestamp_millis();
                     timer_spawn_time.store(end_time - start_time, Ordering::Relaxed);
                     Ok(())
@@ -482,7 +483,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
     });
 
     WAIT_ALL.quit(true).await;
-    WAIT_ALL.wait().await?;
+    WAIT_ALL.wait().await.here()?;
     let end_time = chrono::Local::now().timestamp_millis();
     let diff_time = end_time - start_time;
 
@@ -575,7 +576,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
     }
 
     test_tokio_spawn().await;
-    test_defer_async().await?;
+    test_defer_async().await.here()?;
 
     Ok(())
 }

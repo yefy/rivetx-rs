@@ -17,7 +17,7 @@ pub async fn do_main() -> anyhow::Result<()> {
     std::panic::set_hook(Box::new(thread_panic));
 
     let log4_handle = log4_tests::init_file("./conf/log4rs.yaml").here()?;
-    log4_tests::http_server(58080, log4_handle)?;
+    log4_tests::http_server(58080, log4_handle).here()?;
 
     #[cfg(unix)]
     {

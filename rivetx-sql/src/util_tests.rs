@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::create::create_table;
 use crate::sql_value::SqlValue;
@@ -139,28 +140,28 @@ pub fn test_open_rivetx_sql_sync() -> anyhow::Result<RivetxSql> {
     //let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
     let max_open_conns = 10;
     let max_idle_conns = 5;
-    let rivetx_sql = RivetxSql::new(&mysql_url, max_idle_conns, max_open_conns)?;
+    let rivetx_sql = RivetxSql::new(&mysql_url, max_idle_conns, max_open_conns).here()?;
     Ok(rivetx_sql)
 }
 
 pub async fn test_data_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await?;
+    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await.here()?;
     Ok(())
 }
 
 pub async fn test_key_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5)).await?;
+    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5)).await.here()?;
     Ok(())
 }
 
 pub async fn test_key_clear_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    let mut conn = rivetx_sql.conn().await?;
-    conn.query_drop("TRUNCATE TABLE test_key;").await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
+    conn.query_drop("TRUNCATE TABLE test_key;").await.here()?;
     Ok(())
 }
 
 pub async fn test_key_drop_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
     let _ = conn.query_drop("DROP TABLE test_key;").await;
     Ok(())
 }
@@ -170,13 +171,13 @@ pub async fn test_data_clear_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()>
 }
 
 pub async fn test_data_truncate_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    let mut conn = rivetx_sql.conn().await?;
-    conn.query_drop("TRUNCATE TABLE test_data;").await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
+    conn.query_drop("TRUNCATE TABLE test_data;").await.here()?;
     Ok(())
 }
 
 pub async fn test_data_drop_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
     let _ = conn.query_drop("DROP TABLE test_data;").await;
     Ok(())
 }
@@ -198,7 +199,7 @@ pub async fn test_data_count_rows(rivetx_sql: &RivetxSql, _table_name: &str) -> 
 }
 
 pub async fn test_data_query_all(rivetx_sql: &RivetxSql) -> anyhow::Result<Vec<TestData>> {
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
     let query = "SELECT id, index_col, key_col, name_id, name_index, curr_time, created_at, updated_at FROM test_data ORDER BY index_col, key_col";
 
     log::info!("sql:{}", query);
@@ -216,13 +217,13 @@ pub async fn test_data_query_all(rivetx_sql: &RivetxSql) -> anyhow::Result<Vec<T
                 updated_at,
             },
         )
-        .await?;
+        .await.here()?;
 
     Ok(result)
 }
 
 pub async fn test_data_query_all_no_id(rivetx_sql: &RivetxSql) -> anyhow::Result<Vec<TestData>> {
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
     let query =
         "SELECT index_col, key_col, name_id, name_index, curr_time FROM test_data ORDER BY index_col, key_col";
     log::info!("sql:{}", query);
@@ -239,7 +240,7 @@ pub async fn test_data_query_all_no_id(rivetx_sql: &RivetxSql) -> anyhow::Result
                 updated_at: zero_naive_date_time(),
             }
         })
-        .await?;
+        .await.here()?;
 
     Ok(result)
 }
@@ -256,7 +257,7 @@ pub async fn test_data_query_all_by_id(
     );
     log::info!("sql:{}", query);
 
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
     let result = conn
         .query_map(
             query,
@@ -271,7 +272,7 @@ pub async fn test_data_query_all_by_id(
                 updated_at,
             },
         )
-        .await?;
+        .await.here()?;
 
     Ok(result)
 }

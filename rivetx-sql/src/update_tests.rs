@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::insert::insert;
 use crate::update::{update, UpdateBuilder};
@@ -10,15 +11,15 @@ use chrono::Timelike;
 use std::time::Duration;
 
 pub async fn test_update(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_batch_update_struct(rivetx_sql).await?;
-    test_batch_update_struct2(rivetx_sql).await?;
-    test_batch_update_struct2_point(rivetx_sql).await?;
+    test_batch_update_struct(rivetx_sql).await.here()?;
+    test_batch_update_struct2(rivetx_sql).await.here()?;
+    test_batch_update_struct2_point(rivetx_sql).await.here()?;
     Ok(())
 }
 
 async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
 
     let curr_time = chrono::Local::now()
         .naive_local()
@@ -67,7 +68,7 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     let updates = vec![
         TestData {
@@ -117,9 +118,9 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         2,
         Duration::from_secs(30),
     )
-    .await?;
+    .await.here()?;
 
-    let rows = test_data_query_all_no_id(rivetx_sql).await?;
+    let rows = test_data_query_all_no_id(rivetx_sql).await.here()?;
     let expected = vec![
         TestData {
             id: 0,
@@ -172,13 +173,13 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         }
     }
 
-    log::info!("BatchUpdateStruct test passed ✅");
+    log::info!("BatchUpdateStruct test passed  ");
     Ok(())
 }
 
 async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
     let curr_time = chrono::Local::now()
         .naive_local()
         .with_nanosecond(0)
@@ -224,7 +225,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     let updates = vec![
         TestData {
@@ -271,7 +272,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         .join_on(join_on)
         .set_expr(set_expr)
         .exec()
-        .await?;
+        .await.here()?;
 
     if res.total_affected != update_len {
         return Err(anyhow!(
@@ -281,7 +282,7 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         ));
     }
 
-    let rows = test_data_query_all_no_id(rivetx_sql).await?;
+    let rows = test_data_query_all_no_id(rivetx_sql).await.here()?;
     let expected = vec![
         TestData {
             id: 0,
@@ -326,13 +327,13 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         }
     }
 
-    log::info!("TestBatchUpdateStruct2 test passed ✅");
+    log::info!("TestBatchUpdateStruct2 test passed  ");
     Ok(())
 }
 
 async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
     let curr_time = chrono::Local::now()
         .naive_local()
         .with_nanosecond(0)
@@ -380,7 +381,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     let updates = vec![
         TestData {
@@ -426,7 +427,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         .join_on(join_on)
         .set_expr(set_expr)
         .exec()
-        .await?;
+        .await.here()?;
 
     if res.total_affected != update_len {
         return Err(anyhow!(
@@ -436,7 +437,7 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         ));
     }
 
-    let rows = test_data_query_all_no_id(rivetx_sql).await?;
+    let rows = test_data_query_all_no_id(rivetx_sql).await.here()?;
     let expected = vec![
         TestData {
             id: 0,
@@ -481,6 +482,6 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         }
     }
 
-    log::info!("TestBatchUpdateStruct2Point test passed ✅");
+    log::info!("TestBatchUpdateStruct2Point test passed  ");
     Ok(())
 }

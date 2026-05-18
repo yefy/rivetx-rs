@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::sql_value::SqlValue;
 use crate::util::TIMEOUT;
@@ -30,7 +31,7 @@ pub async fn delete_raw(
         execution_timeout = TIMEOUT;
     }
 
-    let mut conn = rivetx_sql.get_conn().await?;
+    let mut conn = rivetx_sql.get_conn().await.here()?;
 
     let mut total_affected = 0u64;
     let mut last_insert_id = 0u64;
@@ -255,8 +256,8 @@ impl DeleteBuilder {
             self.reserve_field, self.table, self.reserve_field, self.reserve_size
         );
 
-        let mut conn = self.rivetx_sql.get_conn().await?;
-        let row_opt: Option<Row> = conn.query_first(&sql).await?;
+        let mut conn = self.rivetx_sql.get_conn().await.here()?;
+        let row_opt: Option<Row> = conn.query_first(&sql).await.here()?;
 
         let key = match row_opt {
             Some(row) => row.get::<Value, usize>(0),
@@ -280,7 +281,7 @@ impl DeleteBuilder {
                 .where_raw(format!("{} <= ?", self.reserve_field), vec![key.clone()])
                 .limit(limit)
                 .exec()
-                .await?;
+                .await.here()?;
 
             if res.total_affected <= 0 {
                 break;

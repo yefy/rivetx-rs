@@ -8,6 +8,7 @@ mod tests {
     use mysql_async::Value;
     use rivetx_core::rivetx_string::RivetxString;
     use std::time::Duration;
+    use anyhow::Context;
 
     // ────────── Helper: build SELECT SQL similar to select_raw ──────────
 
@@ -341,7 +342,7 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await?;
+        .await.here()?;
 
         Ok(test_data)
     }

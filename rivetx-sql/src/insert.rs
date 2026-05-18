@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::util::{BATCH_SIZE, TIMEOUT};
 use crate::FromSqlRow;
@@ -89,7 +90,7 @@ pub async fn insert_raw(
             query.push_str(on_duplicate_update.as_str());
         }
 
-        let mut conn = rivetx_sql.conn().await?;
+        let mut conn = rivetx_sql.conn().await.here()?;
         let exec_start = Instant::now();
 
         timeout(execution_timeout, conn.exec_drop(&query, &flat_args)).await

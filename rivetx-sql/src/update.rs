@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::util::{BATCH_SIZE, TIMEOUT};
 use crate::{FromSqlRow, ToSqlValues};
@@ -75,7 +76,7 @@ pub async fn update_raw(
         );
 
         let exec_start = Instant::now();
-        let mut conn = rivetx_sql.get_conn().await?;
+        let mut conn = rivetx_sql.get_conn().await.here()?;
         let res = tokio::time::timeout(execution_timeout, conn.exec_iter(&query, &args))
             .await
             .map_err(|e| anyhow::anyhow!( "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",

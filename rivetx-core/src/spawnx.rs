@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::async_channel::AsyncChannel;
 use lazy_static::lazy_static;
 use log::error;
@@ -464,7 +465,7 @@ impl TokioListSpawn {
         let ctx = self.ctx.clone();
         tokio_spawn(async move {
             loop {
-                let data = ctx.chan.rx.recv().await?;
+                let data = ctx.chan.rx.recv().await.here()?;
                 let is_data_nil = data.is_none();
                 let ret = fut(data).await;
                 if let Err(e) = ret {

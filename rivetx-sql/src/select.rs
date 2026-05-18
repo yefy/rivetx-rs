@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::sql_value::SqlValue;
 use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
@@ -151,7 +152,7 @@ where
             );
 
             let exec_start = Instant::now();
-            let mut conn = rivetx_sql.conn().await?;
+            let mut conn = rivetx_sql.conn().await.here()?;
             let rows: Vec<T> = timeout(execution_timeout, conn.exec(query, &args)).await
                 .map_err(|e| anyhow::anyhow!( "batch_start:{}, data_offset: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
                 chunk_index,
@@ -367,7 +368,7 @@ where
                 batch_size,
                 self.timeout,
             )
-            .await?;
+            .await.here()?;
 
             if values.is_empty() {
                 break;

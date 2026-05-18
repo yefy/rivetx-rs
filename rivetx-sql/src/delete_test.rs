@@ -12,6 +12,7 @@ mod tests {
     use mysql_async::Value;
     use std::fmt::Write;
     use std::time::Duration;
+    use anyhow::Context;
 
     // These exec() tests share the same physical table (`test_data`) and therefore must not run
     // concurrently, otherwise they can interleave truncate/insert and violate unique constraints.
@@ -243,7 +244,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_new_exec_err_on_empty_conditions() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
         // This should error because fixed/in/cond are all empty.
         assert!(DeleteBuilder::new(&rivetx_sql, "test_data")
             .exec()
@@ -255,14 +256,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_eq_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("index_col", 0i32)
             .where_eq("key_col", "abc")
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 1);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -273,13 +274,13 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_in_single_col_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![3.into()]])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -290,8 +291,8 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_in_multi_col_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(
@@ -299,7 +300,7 @@ mod tests {
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -310,14 +311,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_in_batch_size_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in_batch_size(1)
             .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![2.into()]])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -325,13 +326,13 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_raw_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("index_col > ?", vec![SqlValue::from(Value::from(0i32))])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -339,14 +340,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_raw_multiple_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("index_col > ?", vec![SqlValue::from(Value::from(0i32))])
             .where_raw("name_id < ?", vec![SqlValue::from(Value::from(3i32))])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 1);
         Ok(())
     }
@@ -354,14 +355,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_limit_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("key_col", "abc")
             .limit(100)
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -372,14 +373,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_timeout_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("key_col", "abc")
             .timeout(Duration::from_secs(5))
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -387,10 +388,10 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_reserve_size_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
 
-        test_data_create_table(&rivetx_sql).await?;
-        test_data_clear_table(&rivetx_sql).await?;
+        test_data_create_table(&rivetx_sql).await.here()?;
+        test_data_clear_table(&rivetx_sql).await.here()?;
 
         let now = chrono::Local::now()
             .naive_local()
@@ -419,12 +420,12 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await?;
+        .await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .reserve_size("id", 2, Duration::from_millis(1))
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 4);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -435,8 +436,8 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_chained_calls_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("key_col", "abc")
@@ -448,7 +449,7 @@ mod tests {
             .limit(10)
             .timeout(Duration::from_secs(5))
             .exec()
-            .await?;
+            .await.here()?;
 
         assert_eq!(res.total_affected, 2);
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -459,13 +460,13 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_raw_empty_args_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("1=1", vec![])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 3);
         Ok(())
     }
@@ -473,13 +474,13 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_reserve_size_zero_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .reserve_size("id", 0, Duration::from_millis(1))
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 3);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -490,15 +491,15 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_eq_different_types_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("index_col", 1i32)
             .where_eq("name_id", 2i32)
             .where_eq("key_col", "abc")
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 1);
         Ok(())
     }
@@ -506,15 +507,15 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_where_in_empty_vals_exec() -> anyhow::Result<()> {
         let _guard = lock_test_data();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         // Current behavior: in_cols is set but in_vals is empty, which produces no WHERE clause.
         // That becomes a full-table delete. This test locks down the behavior explicitly.
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(vec!["name_id".into()], vec![])
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 3);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -525,8 +526,8 @@ mod tests {
     // ────────── DeleteBuilder exec() Integration Tests ──────────
 
     async fn seed_test_data(rivetx_sql: &crate::conn::RivetxSql) -> anyhow::Result<()> {
-        test_data_create_table(rivetx_sql).await?;
-        test_data_clear_table(rivetx_sql).await?;
+        test_data_create_table(rivetx_sql).await.here()?;
+        test_data_clear_table(rivetx_sql).await.here()?;
 
         let now = chrono::Local::now()
             .naive_local()
@@ -574,7 +575,7 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await?;
+        .await.here()?;
 
         Ok(())
     }
@@ -582,8 +583,8 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_exec_where_eq_affects_one() -> anyhow::Result<()> {
         let _guard = TEST_DATA_LOCK.lock().unwrap();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let before = test_data_count_rows(&rivetx_sql, "test_data").await;
         assert_eq!(before, 3);
@@ -592,7 +593,7 @@ mod tests {
             .where_eq("index_col", 1)
             .where_eq("key_col", "abc")
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 1);
 
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -603,8 +604,8 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_exec_where_in_affects_two() -> anyhow::Result<()> {
         let _guard = TEST_DATA_LOCK.lock().unwrap();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(
@@ -612,14 +613,14 @@ mod tests {
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
             .exec()
-            .await?;
+            .await.here()?;
         assert_eq!(res.total_affected, 2);
 
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;
         assert_eq!(after, 1);
 
         // Remaining row should be the "xyz" one
-        let rows = test_data_query_all_no_id(&rivetx_sql).await?;
+        let rows = test_data_query_all_no_id(&rivetx_sql).await.here()?;
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].index, 2);
         assert_eq!(rows[0].key, "xyz");
@@ -629,13 +630,13 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_exec_where_raw_with_args() -> anyhow::Result<()> {
         let _guard = TEST_DATA_LOCK.lock().unwrap();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("name_id >= ?", vec![SqlValue::from(Value::from(2i32))])
             .exec()
-            .await?;
+            .await.here()?;
 
         // name_id: 2,3 should be removed => 2 rows
         assert_eq!(res.total_affected, 2);
@@ -647,14 +648,14 @@ mod tests {
     #[tokio::test]
     async fn test_delete_builder_exec_limit() -> anyhow::Result<()> {
         let _guard = TEST_DATA_LOCK.lock().unwrap();
-        let rivetx_sql = test_open_rivetx_sql().await?;
-        seed_test_data(&rivetx_sql).await?;
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_eq("key_col", "abc")
             .limit(1)
             .exec()
-            .await?;
+            .await.here()?;
 
         assert_eq!(res.total_affected, 1);
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;

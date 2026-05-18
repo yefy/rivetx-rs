@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::delete::{delete_raw, DeleteBuilder};
 use crate::insert::insert;
@@ -12,16 +13,16 @@ use rivetx_core::rivetx_string::RivetxString;
 use std::time::Duration;
 
 pub async fn test_delete(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_batch_delete_per_group(rivetx_sql).await?;
-    test_batch_delete_per_group_struct2(rivetx_sql).await?;
-    test_batch_delete_per_group_struct2_point_limit(rivetx_sql).await?;
-    test_batch_delete_per_group_struct2_point_reserve(rivetx_sql).await?;
+    test_batch_delete_per_group(rivetx_sql).await.here()?;
+    test_batch_delete_per_group_struct2(rivetx_sql).await.here()?;
+    test_batch_delete_per_group_struct2_point_limit(rivetx_sql).await.here()?;
+    test_batch_delete_per_group_struct2_point_reserve(rivetx_sql).await.here()?;
     Ok(())
 }
 
 async fn test_batch_delete_per_group(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
 
     let test_data = vec![
         TestData {
@@ -165,7 +166,7 @@ async fn test_batch_delete_per_group(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         std::time::Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
         return Err(anyhow!("expected 10 rows"));
@@ -213,16 +214,16 @@ async fn test_batch_delete_per_group(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(0),
         )
-        .await?;
+        .await.here()?;
     }
 
-    log::info!("BatchDeletePerGroup test passed ✅");
+    log::info!("BatchDeletePerGroup test passed  ");
     Ok(())
 }
 
 async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
 
     let test_data = vec![
         TestData {
@@ -366,7 +367,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
         false,
         std::time::Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
         return Err(anyhow!("expected 10 rows"));
@@ -381,7 +382,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
             .exec()
-            .await?;
+            .await.here()?;
         if res.total_affected != 1 {
             return Err(anyhow!("total_affected mismatch"));
         }
@@ -398,7 +399,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
                 vec![vec![4.into(), 1004.into()], vec![5.into(), 1005.into()]],
             )
             .exec()
-            .await?;
+            .await.here()?;
 
         if res.total_affected != 2 {
             return Err(anyhow::anyhow!(
@@ -418,7 +419,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
             .where_eq("index_col", 1)
             .where_eq("key_col", "xyz")
             .exec()
-            .await?;
+            .await.here()?;
 
         if res.total_affected != 0 {
             return Err(anyhow::anyhow!(
@@ -433,13 +434,13 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
         }
     }
 
-    log::info!("BatchDeletePerGroupStruct2 test passed ✅");
+    log::info!("BatchDeletePerGroupStruct2 test passed  ");
     Ok(())
 }
 
 async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_data_create_table(rivetx_sql).await?;
-    test_data_clear_table(rivetx_sql).await?;
+    test_data_create_table(rivetx_sql).await.here()?;
+    test_data_clear_table(rivetx_sql).await.here()?;
 
     let test_data = vec![
         TestData {
@@ -583,7 +584,7 @@ async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql)
         false,
         std::time::Duration::from_secs(10),
     )
-    .await?;
+    .await.here()?;
 
     if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
         return Err(anyhow!("expected 10 rows"));
@@ -596,7 +597,7 @@ async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql)
         )
         .limit(1)
         .exec()
-        .await?;
+        .await.here()?;
 
     if res.total_affected != 1 {
         return Err(anyhow!("limit(1) should affect 1 row"));
@@ -606,8 +607,8 @@ async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql)
 
 async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSql) -> Result<()> {
     for i in 0..20 {
-        test_data_create_table(rivetx_sql).await?;
-        test_data_clear_table(rivetx_sql).await?;
+        test_data_create_table(rivetx_sql).await.here()?;
+        test_data_clear_table(rivetx_sql).await.here()?;
 
         let test_data = vec![
             TestData {
@@ -751,7 +752,7 @@ async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSq
             false,
             std::time::Duration::from_secs(10),
         )
-        .await?;
+        .await.here()?;
 
         if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
             return Err(anyhow!("expected 10 rows"));
@@ -762,7 +763,7 @@ async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSq
         let res = DeleteBuilder::new(rivetx_sql, "test_data")
             .reserve_size("id", reserve_size, Duration::from_millis(10))
             .exec()
-            .await?;
+            .await.here()?;
 
         if reserve_size > test_data.len() {
             reserve_size = test_data.len();
@@ -783,7 +784,7 @@ async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSq
         }
 
         let test_data = &test_data[test_data.len() - reserve_size..test_data.len()];
-        let rows = test_data_query_all_no_id(rivetx_sql).await?;
+        let rows = test_data_query_all_no_id(rivetx_sql).await.here()?;
 
         if rows.len() != test_data.len() {
             return Err(anyhow!("rows.len() != testData.len()"));
@@ -801,6 +802,6 @@ async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSq
         }
     }
 
-    log::info!("TestBatchDeletePerGroupStruct2PointReserve test passed ✅");
+    log::info!("TestBatchDeletePerGroupStruct2PointReserve test passed  ");
     Ok(())
 }

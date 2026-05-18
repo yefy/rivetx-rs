@@ -1,3 +1,4 @@
+use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::FromSqlRow;
 use mysql_async::prelude::Queryable;
@@ -56,7 +57,7 @@ pub async fn create_table<T: FromSqlRow>(
     let sql = crate::create::generate_create_table_sql::<T>(table_name);
 
     let start_time = Instant::now();
-    let mut conn = rivetx_sql.conn().await?;
+    let mut conn = rivetx_sql.conn().await.here()?;
 
     let exec_start = Instant::now();
     timeout(execution_timeout, conn.query_drop(&sql))
