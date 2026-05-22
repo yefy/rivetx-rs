@@ -115,7 +115,7 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 [[package]]
 name = "awaitgroup"
 version = "0.6.0"
-source = "git+https://github.com/yefy/awaitgroup.git#1b82732f7d015959571137e35996a2159901529c"
+source = "git+https://github.com/yefy/awaitgroup.git#df92ff4c342afaa244288b1d66f38dc063e999af"
 dependencies = [
  "anyhow 1.0.102 (git+https://github.com/yefy/anyhow.git)",
  "log",
