@@ -1,6 +1,5 @@
 use crate::rivetx_string::RivetxString;
 use core::ops::RangeBounds;
-use lazy_static::lazy_static;
 use mysql_common::value::convert::FromValue;
 use mysql_common::value::Value;
 use serde::de::{Deserialize, Deserializer};
@@ -12,10 +11,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::ops::Range;
 use std::sync::Arc;
-
-lazy_static! {
-    pub static ref EMPTY_ARC_STR: ArcString = ArcString::empty_static("");
-}
 
 enum ArcStringValue {
     SharedStr(Arc<str>),
@@ -66,6 +61,9 @@ impl From<RivetxString> for ArcString {
 
 impl ArcString {
     pub fn from_str(s: &str) -> Self {
+        if s.is_empty() {
+            return ArcString::from("");
+        }
         ArcString::from(s.to_string())
     }
 }
@@ -73,16 +71,18 @@ impl ArcString {
 // impl From<&str> for ArcString {
 //     #[inline]
 //     fn from(s: &str) -> Self {
-//         let s = s.to_owned();
-//         Self::new(s)
+//         if s.is_empty() {
+//             return ArcString::from("");
+//         }
+//         Self::new(s.to_owned())
 //     }
 // }
 
 impl From<String> for ArcString {
     #[inline]
     fn from(s: String) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
+        if s.is_empty() {
+            return ArcString::from("");
         }
         let len = s.len();
         Self {
@@ -94,8 +94,8 @@ impl From<String> for ArcString {
 
 impl From<Arc<str>> for ArcString {
     fn from(s: Arc<str>) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
+        if s.is_empty() {
+            return ArcString::from("");
         }
         let len = s.len();
         Self {
@@ -107,8 +107,8 @@ impl From<Arc<str>> for ArcString {
 
 impl From<Arc<String>> for ArcString {
     fn from(s: Arc<String>) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
+        if s.is_empty() {
+            return ArcString::from("");
         }
         let len = s.len();
         Self {
@@ -120,9 +120,6 @@ impl From<Arc<String>> for ArcString {
 
 impl From<&'static str> for ArcString {
     fn from(s: &'static str) -> Self {
-        if s.len() <= 0 {
-            return EMPTY_ARC_STR.clone();
-        }
         let len = s.len();
         Self {
             data: ArcStringValue::Static(s),
@@ -202,14 +199,6 @@ impl Clone for ArcString {
 impl ArcString {
     pub fn new(str: String) -> Self {
         ArcString::from(str)
-    }
-
-    fn empty_static(s: &'static str) -> Self {
-        let len = s.len();
-        Self {
-            data: ArcStringValue::Static(s),
-            range: Range { start: 0, end: len },
-        }
     }
 
     pub fn len(&self) -> usize {
@@ -332,7 +321,7 @@ impl AsRef<str> for ArcString {
 impl Default for ArcString {
     #[inline]
     fn default() -> Self {
-        return EMPTY_ARC_STR.clone();
+        return ArcString::from("");
     }
 }
 

@@ -30,36 +30,54 @@ impl RivetxString {
 
 impl RivetxString {
     pub fn from_str(s: &str) -> Self {
+        if s.is_empty() {
+            return RivetxString::from("");
+        }
         RivetxString::Owned(s.to_string())
     }
 }
 
 // impl From<&str> for RivetxString {
 //     fn from(s: &str) -> Self {
-//         RivetxString::Owned(s.to_string())
+//             if s.is_empty() {
+//                 return RivetxString::from("");
+//             }
+//             RivetxString::Owned(s.to_string())
 //     }
 // }
 
 impl From<String> for RivetxString {
     fn from(s: String) -> Self {
+        if s.is_empty() {
+            return RivetxString::from("");
+        }
         RivetxString::Owned(s)
     }
 }
 
 impl From<Arc<str>> for RivetxString {
     fn from(s: Arc<str>) -> Self {
+        if s.is_empty() {
+            return RivetxString::from("");
+        }
         RivetxString::SharedStr(s)
     }
 }
 
 impl From<Arc<String>> for RivetxString {
     fn from(s: Arc<String>) -> Self {
+        if s.is_empty() {
+            return RivetxString::from("");
+        }
         RivetxString::SharedString(s)
     }
 }
 
 impl From<ArcString> for RivetxString {
     fn from(s: ArcString) -> Self {
+        if s.is_empty() {
+            return RivetxString::from("");
+        }
         RivetxString::ArcString(s)
     }
 }
