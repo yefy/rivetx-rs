@@ -133,3 +133,59 @@ fn test_linked_hash_mapx_repeated_evictions() {
     let keys: Vec<&str> = map.hash_map.keys().copied().collect();
     assert_eq!(keys, vec!["c", "d"]);
 }
+
+// ────────── try_insert ──────────
+
+#[test]
+fn test_linked_hash_mapx_try_insert_new_key_returns_true() {
+    let mut map = LinkedHashMapx::new(10);
+    assert!(map.try_insert("a", 1));
+    assert_eq!(map.hash_map.get("a"), Some(&1));
+    assert_eq!(map.hash_map.len(), 1);
+}
+
+#[test]
+fn test_linked_hash_mapx_try_insert_existing_key_returns_false() {
+    let mut map = LinkedHashMapx::new(10);
+    assert!(map.try_insert("a", 1));
+    assert!(!map.try_insert("a", 2));
+    assert_eq!(map.hash_map.get("a"), Some(&1));
+    assert_eq!(map.hash_map.len(), 1);
+}
+
+#[test]
+fn test_linked_hash_mapx_try_insert_evicts_oldest_when_exceeds_max_size() {
+    let mut map = LinkedHashMapx::new(2);
+    assert!(map.try_insert(1, "one"));
+    assert!(map.try_insert(2, "two"));
+    assert!(map.try_insert(3, "three"));
+
+    assert_eq!(map.hash_map.len(), 2);
+    assert!(!map.hash_map.contains_key(&1));
+    assert!(map.hash_map.contains_key(&2));
+    assert!(map.hash_map.contains_key(&3));
+}
+
+#[test]
+fn test_linked_hash_mapx_try_insert_existing_key_does_not_evict() {
+    let mut map = LinkedHashMapx::new(2);
+    assert!(map.try_insert("a", 1));
+    assert!(map.try_insert("b", 2));
+    assert!(!map.try_insert("a", 10));
+
+    assert_eq!(map.hash_map.len(), 2);
+    assert_eq!(map.hash_map.get("a"), Some(&1));
+    assert_eq!(map.hash_map.get("b"), Some(&2));
+}
+
+#[test]
+fn test_linked_hash_mapx_try_insert_max_size_zero_no_eviction() {
+    let mut map = LinkedHashMapx::new(0);
+    for i in 0..10 {
+        assert!(map.try_insert(i, i));
+    }
+    assert_eq!(map.hash_map.len(), 10);
+    for i in 0..10 {
+        assert_eq!(map.hash_map.get(&i), Some(&i));
+    }
+}
