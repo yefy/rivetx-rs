@@ -28,3 +28,6 @@ pub mod thread_panic;
 
 pub mod rivetx_string_tests;
 pub mod spawnx_tests;
+pub mod linked_hash_mapx;
+#[cfg(test)]
+mod linked_hash_mapx_test;
