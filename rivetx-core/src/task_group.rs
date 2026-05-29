@@ -61,12 +61,24 @@ impl TaskGroup {
         self.data.await_group.add()
     }
 
+    pub fn add_num(&self, num: i32) {
+        self.data.await_group.add_num(num)
+    }
+
     pub fn guard_add(&self) -> awaitgroup::WaitGroupGuard {
         self.data.await_group.guard_add()
     }
 
     pub fn done(&self) {
         self.data.await_group.done();
+    }
+
+    pub fn set_error(&self, err: anyhow::Error) {
+        self.data.await_group.set_error(err)
+    }
+
+    pub fn count(&self) -> i32 {
+        self.data.await_group.count()
     }
 
     pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<bool> {
