@@ -36,7 +36,7 @@ lazy_static! {
 pub struct Data {
     pub n: i32,
     pub t: i64,
-    pub worker: Option<awaitgroup::WaitGroupGuard>,
+    pub worker: Option<awaitgroup::wait_group::WaitGroupGuard>,
 }
 
 const IS_OPEN_BATCH: bool = true;

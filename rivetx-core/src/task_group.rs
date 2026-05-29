@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub struct TaskGroupContext {
-    await_group: awaitgroup::WaitGroup,
+    await_group: awaitgroup::wait_group::WaitGroup,
     quit_tx: tokio::sync::broadcast::Sender<bool>,
     is_quit: AtomicBool,
 }
@@ -17,7 +17,7 @@ impl TaskGroup {
         let (tx, _) = tokio::sync::broadcast::channel(10);
         Self {
             data: Arc::new(TaskGroupContext {
-                await_group: awaitgroup::WaitGroup::new(),
+                await_group: awaitgroup::wait_group::WaitGroup::new(),
                 quit_tx: tx,
                 is_quit: AtomicBool::new(false),
             }),
@@ -61,11 +61,11 @@ impl TaskGroup {
         self.data.await_group.add()
     }
 
-    pub fn add_num(&self, num: i32) {
+    pub fn add_num(&self, num: usize) {
         self.data.await_group.add_num(num)
     }
 
-    pub fn guard_add(&self) -> awaitgroup::WaitGroupGuard {
+    pub fn guard_add(&self) -> awaitgroup::wait_group::WaitGroupGuard {
         self.data.await_group.guard_add()
     }
 
@@ -73,8 +73,8 @@ impl TaskGroup {
         self.data.await_group.done();
     }
 
-    pub fn set_error(&self, err: anyhow::Error) {
-        self.data.await_group.set_error(err)
+    pub fn done_error(&self, err: anyhow::Error) {
+        self.data.await_group.done_error(err)
     }
 
     pub fn count(&self) -> i32 {
