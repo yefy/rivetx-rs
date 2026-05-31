@@ -36,7 +36,7 @@ lazy_static! {
 pub struct Data {
     pub n: i32,
     pub t: i64,
-    pub worker: Option<awaitgroup::wait_group::WaitGroupGuard>,
+    pub worker: Option<awaitgroup::WaitGroupGuard>,
 }
 
 const IS_OPEN_BATCH: bool = true;
@@ -482,8 +482,7 @@ pub async fn spawnx_tests() -> anyhow::Result<()> {
         Ok(())
     });
 
-    WAIT_ALL.quit(true).await;
-    WAIT_ALL.wait().await.here()?;
+    WAIT_ALL.quit(true, 1).await.here()?;
     let end_time = chrono::Local::now().timestamp_millis();
     let diff_time = end_time - start_time;
 

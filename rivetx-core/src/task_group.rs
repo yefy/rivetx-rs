@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub struct TaskGroupContext {
-    await_group: awaitgroup::wait_group::WaitGroup,
+    await_group: awaitgroup::WaitGroup,
     quit_tx: tokio::sync::broadcast::Sender<bool>,
     is_quit: AtomicBool,
 }
@@ -17,7 +17,7 @@ impl TaskGroup {
         let (tx, _) = tokio::sync::broadcast::channel(10);
         Self {
             data: Arc::new(TaskGroupContext {
-                await_group: awaitgroup::wait_group::WaitGroup::new(),
+                await_group: awaitgroup::WaitGroup::new(),
                 quit_tx: tx,
                 is_quit: AtomicBool::new(false),
             }),
@@ -27,23 +27,32 @@ impl TaskGroup {
         return self.data.is_quit.load(Ordering::Relaxed);
     }
 
-    pub async fn quit(&self, is_wait: bool) {
+    pub async fn quit(&self, is_fast_shutdown: bool, shutdown_timeout: u64) -> anyhow::Result<()> {
         if self.data.is_quit.load(Ordering::Relaxed) {
-            return;
+            return Ok(());
         }
         self.data.is_quit.store(true, Ordering::Relaxed);
-        let _ = self.data.quit_tx.send(true);
-        if is_wait {
-            if let Err(e) = self.wait().await {
-                log::error!("err:{:?}", e);
-            }
+        if is_fast_shutdown {
+            let _ = self.data.quit_tx.send(true);
         }
+
+        self.do_wait(shutdown_timeout).await?;
+        Ok(())
+    }
+
+    pub async fn send(&self) -> anyhow::Result<()> {
+        self.data.quit_tx.send(true)?;
+        Ok(())
     }
 
     pub async fn wait(&self) -> anyhow::Result<()> {
+        return self.do_wait(1).await;
+    }
+
+    pub async fn do_wait(&self, shutdown_timeout: u64) -> anyhow::Result<()> {
         loop {
             let ret = tokio::time::timeout(
-                tokio::time::Duration::from_secs(1),
+                tokio::time::Duration::from_secs(shutdown_timeout),
                 self.data.await_group.wait(),
             )
             .await;
@@ -65,7 +74,7 @@ impl TaskGroup {
         self.data.await_group.add_num(num)
     }
 
-    pub fn guard_add(&self) -> awaitgroup::wait_group::WaitGroupGuard {
+    pub fn guard_add(&self) -> awaitgroup::WaitGroupGuard {
         self.data.await_group.guard_add()
     }
 
