@@ -1,6 +1,7 @@
 #![cfg(unix)]
 use anyhow::anyhow;
 use log::info;
+use serde::Deserialize;
 
 fn default_open_file_limit_soft() -> u64 {
     u16::max_value() as u64
