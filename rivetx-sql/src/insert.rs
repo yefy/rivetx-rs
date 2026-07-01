@@ -1,7 +1,7 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::util::{BATCH_SIZE, TIMEOUT};
 use crate::FromSqlRow;
+use anyhow::Context;
 use mysql_async::prelude::Queryable;
 use mysql_async::Value;
 use rivetx_core::rivetx_string::RivetxString;

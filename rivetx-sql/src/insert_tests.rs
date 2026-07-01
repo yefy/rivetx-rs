@@ -1,7 +1,7 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::insert::{insert_raw, InsertBuilder};
 use crate::util_tests::*;
+use anyhow::Context;
 use chrono::Timelike;
 use mysql_async::prelude::Queryable;
 use mysql_async::Value;
@@ -10,8 +10,12 @@ use std::time::Duration;
 pub async fn test_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
     test_batch_insert(rivetx_sql).await.here()?;
     test_batch_insert_struct(rivetx_sql).await.here()?;
-    test_batch_insert_no_duplicate_update(rivetx_sql).await.here()?;
-    test_batch_insert_struct_no_duplicate_update(rivetx_sql).await.here()?;
+    test_batch_insert_no_duplicate_update(rivetx_sql)
+        .await
+        .here()?;
+    test_batch_insert_struct_no_duplicate_update(rivetx_sql)
+        .await
+        .here()?;
     test_batch_new_insert_struct(rivetx_sql).await.here()?;
     // In Rust, Vec<T> and Vec<Box<T>> are handled similarly; merged here for demonstration
     Ok(())
@@ -60,7 +64,8 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     assert_eq!(test_data_count_rows(rivetx_sql, "test_data").await, 10);
 
@@ -87,14 +92,16 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let mut conn = rivetx_sql.conn().await.here()?;
     let row: Option<(i32, i32)> = conn
         .query_first(
             "SELECT name_id, name_index FROM test_data WHERE index_col = 0 AND key_col = 'abc'",
         )
-        .await.here()?;
+        .await
+        .here()?;
 
     let (name_id, name_index) = row.unwrap();
     if name_id != 11 || name_index != 1012 {
@@ -136,7 +143,8 @@ pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> anyhow::Result<
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     assert_eq!(test_data_count_rows(rivetx_sql, "test_data").await, 10);
     log::info!("test_batch_insert_struct passed  ");
@@ -180,7 +188,8 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> an
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
     assert_eq!(test_data_count_rows(rivetx_sql, "test_data").await, 1);
 
     log::info!("test_batch_insert_no_duplicate_update passed  ");
@@ -209,7 +218,8 @@ pub async fn test_batch_insert_struct_no_duplicate_update(
 
     InsertBuilder::new(rivetx_sql, "test_data", data)
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
     assert_eq!(test_data_count_rows(rivetx_sql, "test_data").await, 1);
 
     log::info!("test_batch_insert_struct_no_duplicate_update passed  ");
@@ -243,7 +253,8 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> anyhow::Res
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     let mut conn = rivetx_sql.conn().await.here()?;
     let last_id: u64 = conn

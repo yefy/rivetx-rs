@@ -26,8 +26,9 @@ pub mod task_group;
 mod task_group_test;
 pub mod thread_panic;
 
-pub mod rivetx_string_tests;
-pub mod spawnx_tests;
+pub mod config_manager;
 pub mod linked_hash_mapx;
 #[cfg(test)]
 mod linked_hash_mapx_test;
+pub mod rivetx_string_tests;
+pub mod spawnx_tests;

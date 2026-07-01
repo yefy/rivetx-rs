@@ -1,8 +1,8 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::sql_value::SqlValue;
 use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
 use crate::{FromSqlRow, StructMeta};
+use anyhow::Context;
 use anyhow::{anyhow, Result};
 use mysql_async::prelude::{FromRow, Queryable};
 use rivetx_core::rivetx_string::RivetxString;
@@ -368,7 +368,8 @@ where
                 batch_size,
                 self.timeout,
             )
-            .await.here()?;
+            .await
+            .here()?;
 
             if values.is_empty() {
                 break;

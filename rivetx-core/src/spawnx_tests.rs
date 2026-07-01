@@ -1,12 +1,12 @@
 #![allow(deprecated)]
 
-use anyhow::Context;
 use crate::spawnx::{
     defer_async, tokio_batch_add, tokio_batch_close, tokio_batch_flush, tokio_batch_spawn,
     tokio_list_add, tokio_list_close, tokio_list_spawn, tokio_spawn, tokio_timer_spawn,
     tokio_uniq_spawn,
 };
 use crate::task_group::TaskGroup;
+use anyhow::Context;
 use lazy_static::lazy_static;
 use log::info;
 use std::collections::VecDeque;

@@ -7,7 +7,7 @@ mod tests {
         test_data_clear_table, test_data_create_table, test_data_query_all_no_id,
         test_open_rivetx_sql_sync, zero_naive_date_time, TestData,
     };
-    use anyhow::{Result, Context};
+    use anyhow::{Context, Result};
     use chrono::Timelike;
     use mysql_async::Value;
     use rivetx_core::rivetx_string::RivetxString;
@@ -281,7 +281,8 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         Ok(test_data)
     }

@@ -1,8 +1,8 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::sql_value::SqlValue;
 use crate::util::TIMEOUT;
 use crate::util::{QueryCond, BATCH_SIZE};
+use anyhow::Context;
 use anyhow::{anyhow, Result};
 use futures::future::{BoxFuture, FutureExt};
 use mysql_async::{prelude::*, Row, Value};
@@ -281,7 +281,8 @@ impl DeleteBuilder {
                 .where_raw(format!("{} <= ?", self.reserve_field), vec![key.clone()])
                 .limit(limit)
                 .exec()
-                .await.here()?;
+                .await
+                .here()?;
 
             if res.total_affected <= 0 {
                 break;

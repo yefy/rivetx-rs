@@ -1,7 +1,7 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::create::create_table;
 use crate::util_tests::*;
+use anyhow::Context;
 use mysql_async::prelude::Queryable;
 use std::time::Duration;
 
@@ -14,12 +14,20 @@ pub async fn test_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
     test_data_drop_table(rivetx_sql).await.here()?;
     test_key_drop_table(rivetx_sql).await.here()?;
 
-    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await.here()?;
-    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5)).await.here()?;
+    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5))
+        .await
+        .here()?;
+    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5))
+        .await
+        .here()?;
 
     // Verify tables were created
-    test_verify_test_data_table_structure(rivetx_sql).await.here()?;
-    test_verify_test_key_table_structure(rivetx_sql).await.here()?;
+    test_verify_test_data_table_structure(rivetx_sql)
+        .await
+        .here()?;
+    test_verify_test_key_table_structure(rivetx_sql)
+        .await
+        .here()?;
 
     Ok(())
 }
@@ -161,10 +169,14 @@ pub async fn test_create_table_idempotent(rivetx_sql: &RivetxSql) -> anyhow::Res
     test_data_drop_table(rivetx_sql).await.here()?;
 
     // First creation
-    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await.here()?;
+    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5))
+        .await
+        .here()?;
 
     // Second creation should succeed due to IF NOT EXISTS
-    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await.here()?;
+    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5))
+        .await
+        .here()?;
 
     log::info!("create_table idempotency test passed");
     Ok(())
@@ -175,7 +187,9 @@ pub async fn test_create_table_with_timeout(rivetx_sql: &RivetxSql) -> anyhow::R
     test_key_drop_table(rivetx_sql).await.here()?;
 
     // Create with shorter timeout
-    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(2)).await.here()?;
+    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(2))
+        .await
+        .here()?;
 
     let mut conn = rivetx_sql.conn().await.here()?;
     let tables: Vec<String> = conn

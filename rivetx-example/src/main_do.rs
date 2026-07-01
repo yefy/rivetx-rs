@@ -1,4 +1,5 @@
 use crate::anyhow_tests::anyhow_tests;
+use crate::config_manager_test::config_manager_tests;
 use crate::linked_hash_map_tests::linked_hash_map_tests;
 use crate::log4_tests;
 use crate::moka_tests::moka_tests;
@@ -32,9 +33,6 @@ pub async fn do_main() -> anyhow::Result<()> {
     log::info!("anyhow_tests");
     anyhow_tests().await.here()?;
 
-    log::info!("rivetx_sql_tests");
-    rivetx_sql_tests().await.here()?;
-
     log::info!("spawnx_tests");
     spawnx_tests().await.here()?;
 
@@ -46,6 +44,13 @@ pub async fn do_main() -> anyhow::Result<()> {
 
     log::info!("rivetx_string_tests");
     rivetx_string_tests().await.here()?;
+
+    log::info!("config_manager_tests");
+    config_manager_tests().await.here()?;
+
+    tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+    log::info!("rivetx_sql_tests");
+    rivetx_sql_tests().await.here()?;
 
     log::info!("do_main end");
 

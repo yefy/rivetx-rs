@@ -1,4 +1,3 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::insert::insert;
 use crate::select::{select_raw, SelectBuilder};
@@ -8,6 +7,7 @@ use crate::util_tests::{
     test_data_query_all, test_data_query_all_by_id, zero_naive_date_time, TestData, TestDataByAs,
     TestDataByD, TestDataNoExport,
 };
+use anyhow::Context;
 
 use crate::util_tests::Testkey;
 use anyhow::{anyhow, Result};
@@ -121,7 +121,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     if true {
         use mysql_async::prelude::Queryable;
@@ -151,7 +152,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
                 "SELECT id, index_col, key_col, name_id, name_index FROM test_data",
                 (),
             )
-            .await.here()?;
+            .await
+            .here()?;
         log::info!("res {:?}", res);
     }
 
@@ -160,7 +162,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .where_eq("1", 1)
             .order("order by index_col, key_col")
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -186,7 +189,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .order_field_select("id", true, i)
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -201,7 +205,9 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             return Err(anyhow!("expected {} rows, got {}", limit, res1.len()));
         }
 
-        let rows = test_data_query_all_by_id(rivetx_sql, true, i).await.here()?;
+        let rows = test_data_query_all_by_id(rivetx_sql, true, i)
+            .await
+            .here()?;
         for (index, row) in rows.iter().enumerate() {
             info!("index:{}, res:{:?}, row:{:?}", index, res1[index], row);
             if row.id != res1[index].id {
@@ -217,7 +223,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .order_field_select("id", false, i)
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -232,7 +239,9 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             return Err(anyhow!("expected {} rows, got {}", limit, res1.len()));
         }
 
-        let rows = test_data_query_all_by_id(rivetx_sql, false, i).await.here()?;
+        let rows = test_data_query_all_by_id(rivetx_sql, false, i)
+            .await
+            .here()?;
         for (index, row) in rows.iter().enumerate() {
             info!("index:{}, res:{:?}, row:{:?}", index, res1[index], row);
             if row.id != res1[index].id {
@@ -246,7 +255,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .where_eq("index_col", 1)
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -265,7 +275,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .where_in(vec!["key_col".into()], in_vals)
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -309,7 +320,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -325,7 +337,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .where_eq("index_col", 1)
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         info!("res1:{:?}", res1);
         if res1.len() != 3 {
             return Err(anyhow!("expected 3 rows, got {}", res1.len()));
@@ -338,7 +351,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             .where_cond("and key_col = ?", vec!["abc".into()])
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         if res1.len() != 1 {
@@ -354,7 +368,8 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
             )
             .timeout(Duration::from_secs(10))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         info!("res1:{:?}", res1);
         if res1.len() != 1 {
@@ -458,7 +473,8 @@ pub async fn test_select_with_where(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     {
         let mut cond = QueryCond::new();
@@ -478,7 +494,8 @@ pub async fn test_select_with_where(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -511,7 +528,8 @@ pub async fn test_select_with_where(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res2:{:?}", res2);
         for res in &res2 {
@@ -536,7 +554,8 @@ pub async fn test_select_with_where(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res4:{:?}", res4);
         for res in &res4 {
@@ -644,7 +663,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let test_keys = vec![
         Testkey {
@@ -699,7 +719,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let join_str = "JOIN test_key k ON d.index_col = k.index_col AND d.key_col = k.key_col";
 
@@ -721,7 +742,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res1:{:?}", res1);
         for res in &res1 {
@@ -750,7 +772,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res_as:{:?}", res_as);
         for res in &res_as {
@@ -783,7 +806,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res2:{:?}", res2);
         for res in &res2 {
@@ -808,7 +832,8 @@ pub async fn test_select_with_where_join(rivetx_sql: &RivetxSql) -> Result<()> {
             0,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         info!("res4:{:?}", res4);
         for res in &res4 {

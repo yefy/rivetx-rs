@@ -1,8 +1,8 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::create::create_table;
 use crate::sql_value::SqlValue;
 use crate::FromSqlRow;
+use anyhow::Context;
 use chrono::{NaiveDate, NaiveDateTime};
 use mysql_async::prelude::*;
 use mysql_async::Value;
@@ -145,12 +145,16 @@ pub fn test_open_rivetx_sql_sync() -> anyhow::Result<RivetxSql> {
 }
 
 pub async fn test_data_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5)).await.here()?;
+    create_table::<TestData>(rivetx_sql, &"test_data".into(), Duration::from_secs(5))
+        .await
+        .here()?;
     Ok(())
 }
 
 pub async fn test_key_create_table(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
-    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5)).await.here()?;
+    create_table::<Testkey>(rivetx_sql, &"test_key".into(), Duration::from_secs(5))
+        .await
+        .here()?;
     Ok(())
 }
 
@@ -217,7 +221,8 @@ pub async fn test_data_query_all(rivetx_sql: &RivetxSql) -> anyhow::Result<Vec<T
                 updated_at,
             },
         )
-        .await.here()?;
+        .await
+        .here()?;
 
     Ok(result)
 }
@@ -240,7 +245,8 @@ pub async fn test_data_query_all_no_id(rivetx_sql: &RivetxSql) -> anyhow::Result
                 updated_at: zero_naive_date_time(),
             }
         })
-        .await.here()?;
+        .await
+        .here()?;
 
     Ok(result)
 }
@@ -272,7 +278,8 @@ pub async fn test_data_query_all_by_id(
                 updated_at,
             },
         )
-        .await.here()?;
+        .await
+        .here()?;
 
     Ok(result)
 }

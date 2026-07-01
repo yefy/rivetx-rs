@@ -1,10 +1,10 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::insert::{insert, insert_raw, InsertBuilder};
 use crate::util_tests::{
     test_data_count_rows, test_data_create_table, test_data_query_all_no_id,
     test_data_truncate_table, zero_naive_date_time, TestData,
 };
+use anyhow::Context;
 use anyhow::{anyhow, Result};
 use chrono::Timelike;
 use log::info;
@@ -13,12 +13,18 @@ use mysql_async::Value;
 use std::time::Duration;
 
 pub async fn test_insert2(rivetx_sql: &RivetxSql) -> Result<()> {
-    test_batch_new_insert_struct_point(rivetx_sql).await.here()?;
+    test_batch_new_insert_struct_point(rivetx_sql)
+        .await
+        .here()?;
     test_batch_new_insert_struct(rivetx_sql).await.here()?;
     test_batch_insert(rivetx_sql).await.here()?;
     test_batch_insert_struct(rivetx_sql).await.here()?;
-    test_batch_insert_no_duplicate_update(rivetx_sql).await.here()?;
-    test_batch_insert_struct_no_duplicate_update(rivetx_sql).await.here()?;
+    test_batch_insert_no_duplicate_update(rivetx_sql)
+        .await
+        .here()?;
+    test_batch_insert_struct_no_duplicate_update(rivetx_sql)
+        .await
+        .here()?;
     Ok(())
 }
 
@@ -180,7 +186,8 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let count = test_data_count_rows(rivetx_sql, "test_data").await;
     if count != 10 {
@@ -210,14 +217,16 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let mut conn = rivetx_sql.get_conn().await.here()?;
     let row_res: Option<(i32, i32)> = conn
         .query_first(
             "SELECT name_id, name_index FROM test_data WHERE index_col = 0 AND key_col = 'abc'",
         )
-        .await.here()?;
+        .await
+        .here()?;
 
     if let Some((name_id, name_index)) = row_res {
         if name_id != 11 || name_index != 1012 {
@@ -383,7 +392,8 @@ pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let count = test_data_count_rows(rivetx_sql, "test_data").await;
     if count != 10 {
@@ -412,14 +422,16 @@ pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let mut conn = rivetx_sql.get_conn().await.here()?;
     let row_res: Option<(i32, i32)> = conn
         .query_first(
             "SELECT name_id, name_index FROM test_data WHERE index_col = 0 AND key_col = 'abc'",
         )
-        .await.here()?;
+        .await
+        .here()?;
 
     if let Some((name_id, name_index)) = row_res {
         if name_id != 11 || name_index != 1012 {
@@ -591,7 +603,8 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
         return Err(anyhow!("expected 10 rows"));
@@ -747,7 +760,8 @@ pub async fn test_batch_insert_struct_no_duplicate_update(rivetx_sql: &RivetxSql
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     if test_data_count_rows(rivetx_sql, "test_data").await != 10 {
         return Err(anyhow!("expected 10 rows"));
@@ -900,7 +914,8 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     info!("BatchInsertStruct test result:{:?}", result);
 
@@ -964,13 +979,15 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let row_res: Option<(i32, i32)> = conn
         .query_first(
             "SELECT name_id, name_index FROM test_data WHERE index_col = 0 AND key_col = 'abc'",
         )
-        .await.here()?;
+        .await
+        .here()?;
     if let Some((name_id, name_index)) = row_res {
         if name_id != 11 || name_index != 1012 {
             return Err(anyhow!("ON DUPLICATE KEY UPDATE failed for struct"));
@@ -1124,7 +1141,8 @@ pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Resul
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     info!("BatchInsertStruct test result:{:?}", result);
 

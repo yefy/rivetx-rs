@@ -1,7 +1,7 @@
+use linked_hash_map::Entry;
 use linked_hash_map::LinkedHashMap;
 use std::collections::hash_map::{self};
 use std::hash::{BuildHasher, Hash};
-use linked_hash_map::Entry;
 
 pub struct LinkedHashMapx<K, V, S = hash_map::RandomState> {
     pub max_size: usize,
@@ -9,17 +9,17 @@ pub struct LinkedHashMapx<K, V, S = hash_map::RandomState> {
 }
 impl<K: Hash + Eq, V> LinkedHashMapx<K, V> {
     pub fn new(max_size: usize) -> Self {
-        return Self{
-             max_size,
-             hash_map: LinkedHashMap::new(),
-        }
+        return Self {
+            max_size,
+            hash_map: LinkedHashMap::new(),
+        };
     }
 
     pub fn with_capacity(max_size: usize, capacity: usize) -> Self {
-        return Self{
+        return Self {
             max_size,
             hash_map: LinkedHashMap::with_capacity(capacity),
-        }
+        };
     }
 }
 
@@ -48,5 +48,3 @@ impl<K: Hash + Eq, V, S: BuildHasher> LinkedHashMapx<K, V, S> {
         }
     }
 }
-
-

@@ -1,4 +1,3 @@
-use anyhow::Context;
 use crate::create_tests::test_create;
 use crate::delete_tests::test_delete;
 use crate::insert_tests::test_insert;
@@ -9,6 +8,7 @@ use crate::util_tests::{
     test_open_rivetx_sql, TestData, TestDataByAs, TestDataByD, TestDataNoExport, Testkey,
 };
 use crate::FromSqlRow;
+use anyhow::Context;
 use log;
 
 pub async fn rivetx_sql_tests() -> anyhow::Result<()> {

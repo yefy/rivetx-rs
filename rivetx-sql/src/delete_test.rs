@@ -8,11 +8,11 @@ mod tests {
         zero_naive_date_time, TestData,
     };
     use crate::{insert::insert, util_tests::test_data_query_all_no_id};
+    use anyhow::Context;
     use chrono::Timelike;
     use mysql_async::Value;
     use std::fmt::Write;
     use std::time::Duration;
-    use anyhow::Context;
 
     // These exec() tests share the same physical table (`test_data`) and therefore must not run
     // concurrently, otherwise they can interleave truncate/insert and violate unique constraints.
@@ -263,7 +263,8 @@ mod tests {
             .where_eq("index_col", 0i32)
             .where_eq("key_col", "abc")
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 1);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -280,7 +281,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![3.into()]])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -300,7 +302,8 @@ mod tests {
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -318,7 +321,8 @@ mod tests {
             .where_in_batch_size(1)
             .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![2.into()]])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -332,7 +336,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("index_col > ?", vec![SqlValue::from(Value::from(0i32))])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -347,7 +352,8 @@ mod tests {
             .where_raw("index_col > ?", vec![SqlValue::from(Value::from(0i32))])
             .where_raw("name_id < ?", vec![SqlValue::from(Value::from(3i32))])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 1);
         Ok(())
     }
@@ -362,7 +368,8 @@ mod tests {
             .where_eq("key_col", "abc")
             .limit(100)
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -380,7 +387,8 @@ mod tests {
             .where_eq("key_col", "abc")
             .timeout(Duration::from_secs(5))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
         Ok(())
     }
@@ -420,12 +428,14 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .reserve_size("id", 2, Duration::from_millis(1))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 4);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -449,7 +459,8 @@ mod tests {
             .limit(10)
             .timeout(Duration::from_secs(5))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         assert_eq!(res.total_affected, 2);
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -466,7 +477,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("1=1", vec![])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 3);
         Ok(())
     }
@@ -480,7 +492,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .reserve_size("id", 0, Duration::from_millis(1))
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 3);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -499,7 +512,8 @@ mod tests {
             .where_eq("name_id", 2i32)
             .where_eq("key_col", "abc")
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 1);
         Ok(())
     }
@@ -515,7 +529,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_in(vec!["name_id".into()], vec![])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 3);
 
         let count = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -575,7 +590,8 @@ mod tests {
             false,
             Duration::from_secs(10),
         )
-        .await.here()?;
+        .await
+        .here()?;
 
         Ok(())
     }
@@ -593,7 +609,8 @@ mod tests {
             .where_eq("index_col", 1)
             .where_eq("key_col", "abc")
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 1);
 
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -613,7 +630,8 @@ mod tests {
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
         assert_eq!(res.total_affected, 2);
 
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;
@@ -636,7 +654,8 @@ mod tests {
         let res = DeleteBuilder::new(&rivetx_sql, "test_data")
             .where_raw("name_id >= ?", vec![SqlValue::from(Value::from(2i32))])
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         // name_id: 2,3 should be removed => 2 rows
         assert_eq!(res.total_affected, 2);
@@ -655,7 +674,8 @@ mod tests {
             .where_eq("key_col", "abc")
             .limit(1)
             .exec()
-            .await.here()?;
+            .await
+            .here()?;
 
         assert_eq!(res.total_affected, 1);
         let after = test_data_count_rows(&rivetx_sql, "test_data").await;

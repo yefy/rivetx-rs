@@ -1,6 +1,6 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::FromSqlRow;
+use anyhow::Context;
 use mysql_async::prelude::Queryable;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};

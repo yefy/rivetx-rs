@@ -1,4 +1,3 @@
-use anyhow::Context;
 use crate::conn::RivetxSql;
 use crate::insert::insert;
 use crate::update::{update, UpdateBuilder};
@@ -6,6 +5,7 @@ use crate::util_tests::{
     test_data_clear_table, test_data_create_table, test_data_query_all_no_id, zero_naive_date_time,
     TestData,
 };
+use anyhow::Context;
 use anyhow::{anyhow, Result};
 use chrono::Timelike;
 use std::time::Duration;
@@ -68,7 +68,8 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let updates = vec![
         TestData {
@@ -118,7 +119,8 @@ async fn test_batch_update_struct(rivetx_sql: &RivetxSql) -> Result<()> {
         2,
         Duration::from_secs(30),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let rows = test_data_query_all_no_id(rivetx_sql).await.here()?;
     let expected = vec![
@@ -225,7 +227,8 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let updates = vec![
         TestData {
@@ -272,7 +275,8 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
         .join_on(join_on)
         .set_expr(set_expr)
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     if res.total_affected != update_len {
         return Err(anyhow!(
@@ -381,7 +385,8 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         false,
         Duration::from_secs(10),
     )
-    .await.here()?;
+    .await
+    .here()?;
 
     let updates = vec![
         TestData {
@@ -427,7 +432,8 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
         .join_on(join_on)
         .set_expr(set_expr)
         .exec()
-        .await.here()?;
+        .await
+        .here()?;
 
     if res.total_affected != update_len {
         return Err(anyhow!(
