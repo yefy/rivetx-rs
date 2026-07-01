@@ -13,9 +13,7 @@ base64 = "0.22.0"
 lazy_static = "1.4.0"
 log = "0.4"
 async-channel = "1.8.0"
-#anyhow = "1.0.102"
 anyhow = { git = "https://github.com/yefy/anyhow.git" }
-#anyhow = { path = "../anyhow" }
 awaitgroup = { git = "https://github.com/yefy/awaitgroup.git" }
 linked-hash-map = "0.5.6"
 scopeguard = "1.2.0"
@@ -25,3 +23,4 @@ libc = "0.2.153"
 rlimit = "0.9.0"
 arc-swap = "1.9.2"
 toml = "0.5.10"
+serde_yaml = "0.9.34+deprecated"

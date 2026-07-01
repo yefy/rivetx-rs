@@ -32,6 +32,44 @@ impl<T: Config + serde::de::DeserializeOwned> ConfigParser<T> for TomlParser<T> 
     }
 }
 
+// JSON 解析器
+pub struct JsonParser<T: Config + serde::de::DeserializeOwned> {
+    _marker: PhantomData<T>,
+}
+
+impl<T: Config + serde::de::DeserializeOwned> Default for JsonParser<T> {
+    fn default() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<T: Config + serde::de::DeserializeOwned> ConfigParser<T> for JsonParser<T> {
+    fn parse(&self, content: &str) -> Result<T> {
+        Ok(serde_json::from_str(content).context("Failed to parse JSON")?)
+    }
+}
+
+// YAML 解析器
+pub struct YamlParser<T: Config + serde::de::DeserializeOwned> {
+    _marker: PhantomData<T>,
+}
+
+impl<T: Config + serde::de::DeserializeOwned> Default for YamlParser<T> {
+    fn default() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<T: Config + serde::de::DeserializeOwned> ConfigParser<T> for YamlParser<T> {
+    fn parse(&self, content: &str) -> Result<T> {
+        Ok(serde_yaml::from_str(content).context("Failed to parse YAML")?)
+    }
+}
+
 // 配置管理器 - Parser 用 Arc 包裹
 pub struct ConfigManager<T: Config, P: ConfigParser<T> = TomlParser<T>> {
     config: Arc<ArcSwap<T>>,
@@ -112,3 +150,5 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
 }
 
 pub type TomlConfigManager<T> = ConfigManager<T, TomlParser<T>>;
+pub type JsonConfigManager<T> = ConfigManager<T, JsonParser<T>>;
+pub type YamlConfigManager<T> = ConfigManager<T, YamlParser<T>>;
