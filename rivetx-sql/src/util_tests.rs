@@ -2,6 +2,8 @@ use crate::conn::RivetxSql;
 use crate::create::create_table;
 use crate::sql_value::SqlValue;
 use crate::FromSqlRow;
+use crate::StructMeta;
+use crate::ToSqlValues;
 use anyhow::Context;
 use chrono::{NaiveDate, NaiveDateTime};
 use mysql_async::prelude::*;

@@ -212,7 +212,7 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
         // ========================
 
         impl FromSqlRow for #name {
-            fn get_struct_meta() -> crate::StructMeta {
+            fn get_struct_meta() -> StructMeta {
                 use std::collections::HashMap;
                 type RString = rivetx_core::rivetx_string::RivetxString;
 
@@ -227,7 +227,7 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
                 let mut unique_map: HashMap<RString, Vec<RString>> = HashMap::new();
                 #( #uniques )*
 
-                crate::StructMeta {
+                StructMeta {
                     cols: vec![#( RString::from(#cols) ),*],
                     field_index: vec![#( #field_indices ),*],
 
@@ -249,7 +249,7 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
         // ========================
         // ToSqlValues
         // ========================
-        impl crate::ToSqlValues for #name {
+        impl ToSqlValues for #name {
             fn to_values_discard_auto(&self) -> Vec<mysql_async::Value> {
                 vec![
                     #( mysql_async::Value::from(self.#discard_auto_field_idents.clone()) ),*
