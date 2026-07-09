@@ -84,6 +84,8 @@ max_connections = 100
     CONFIGX.load_full().stop();
     assert!(!CONFIGX.load_full().is_watching());
 
+    std::fs::remove_file(&config_path).ok();
+
     Ok(())
 }
 
