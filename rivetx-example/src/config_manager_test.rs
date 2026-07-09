@@ -41,6 +41,12 @@ pub fn config() -> Arc<AppConfig> {
 pub async fn config_manager_tests() -> anyhow::Result<()> {
     let config_path = PathBuf::from("./conf/app.toml");
 
+    let updated = r#"refresh_rate = 5
+app_name = "rivetx-example-reloaded"
+max_connections = 300
+"#;
+    std::fs::write(&config_path, updated).context("Failed to write config file")?;
+
     let manager = TomlConfigManager::<AppConfig>::new(TomlParser::default());
     manager.load(&config_path).here()?;
 

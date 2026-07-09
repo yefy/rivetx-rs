@@ -30,5 +30,8 @@ pub mod config_manager;
 pub mod linked_hash_mapx;
 #[cfg(test)]
 mod linked_hash_mapx_test;
+pub mod queue;
+#[cfg(test)]
+pub mod queue_test;
 pub mod rivetx_string_tests;
 pub mod spawnx_tests;
