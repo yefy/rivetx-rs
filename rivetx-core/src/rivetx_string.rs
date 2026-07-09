@@ -8,6 +8,8 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
+const OWNED_STRING_MAX_SIZE: usize = 128;
+
 pub enum RivetxString {
     Owned(String),
     SharedStr(Arc<str>),
@@ -33,7 +35,7 @@ impl RivetxString {
         if s.is_empty() {
             return RivetxString::from("");
         }
-        RivetxString::Owned(s.to_string())
+        RivetxString::from(s.to_string())
     }
 }
 
@@ -42,7 +44,7 @@ impl RivetxString {
 //             if s.is_empty() {
 //                 return RivetxString::from("");
 //             }
-//             RivetxString::Owned(s.to_string())
+//             RivetxString::from(s.to_string())
 //     }
 // }
 
@@ -51,7 +53,11 @@ impl From<String> for RivetxString {
         if s.is_empty() {
             return RivetxString::from("");
         }
-        RivetxString::Owned(s)
+        if s.len() > OWNED_STRING_MAX_SIZE {
+            RivetxString::from(Arc::new(s))
+        } else {
+            RivetxString::Owned(s)
+        }
     }
 }
 
@@ -291,8 +297,8 @@ impl std::borrow::Borrow<str> for RivetxString {
 impl<'a> From<std::borrow::Cow<'a, str>> for RivetxString {
     fn from(c: std::borrow::Cow<'a, str>) -> Self {
         match c {
-            std::borrow::Cow::Borrowed(s) => Self::Owned(s.to_string()),
-            std::borrow::Cow::Owned(s) => Self::Owned(s),
+            std::borrow::Cow::Borrowed(s) => Self::from(s.to_string()),
+            std::borrow::Cow::Owned(s) => Self::from(s),
         }
     }
 }
