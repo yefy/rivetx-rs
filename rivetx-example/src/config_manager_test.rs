@@ -135,7 +135,10 @@ max_connections = 300
 
     tokio::time::sleep(tokio::time::Duration::from_secs(6)).await;
 
-    assert!(called.load(Ordering::SeqCst), "init_call callback was not invoked");
+    assert!(
+        called.load(Ordering::SeqCst),
+        "init_call callback was not invoked"
+    );
     assert_eq!(*received_tag.lock().unwrap(), expected_tag);
 
     let cfg = manager.get();
