@@ -189,3 +189,74 @@ fn test_linked_hash_mapx_try_insert_max_size_zero_no_eviction() {
         assert_eq!(map.hash_map.get(&i), Some(&i));
     }
 }
+
+// ────────── set_max_size (gradual eviction) ──────────
+
+#[test]
+fn test_linked_hash_mapx_set_max_size_only_updates_limit() {
+    let mut map = LinkedHashMapx::new(100);
+    for i in 0..20 {
+        map.insert(i, i);
+    }
+    assert_eq!(map.hash_map.len(), 20);
+
+    map.set_max_size(5);
+    assert_eq!(map.max_size, 5);
+    assert_eq!(map.hash_map.len(), 20);
+    for i in 0..20 {
+        assert_eq!(map.hash_map.get(&i), Some(&i));
+    }
+}
+
+#[test]
+fn test_linked_hash_mapx_set_max_size_gradual_eviction_on_insert() {
+    let mut map = LinkedHashMapx::new(20);
+    for i in 0..20 {
+        map.insert(i, i);
+    }
+
+    map.set_max_size(5);
+    map.insert(100, 100);
+
+    assert_eq!(map.hash_map.len(), 11);
+    for i in 0..10 {
+        assert!(!map.hash_map.contains_key(&i));
+    }
+    for i in 10..20 {
+        assert_eq!(map.hash_map.get(&i), Some(&i));
+    }
+    assert_eq!(map.hash_map.get(&100), Some(&100));
+}
+
+#[test]
+fn test_linked_hash_mapx_set_max_size_gradual_eviction_reaches_limit() {
+    let mut map = LinkedHashMapx::new(20);
+    for i in 0..15 {
+        map.insert(i, i);
+    }
+
+    map.set_max_size(5);
+    for i in 100..110 {
+        map.insert(i, i);
+    }
+
+    assert_eq!(map.hash_map.len(), 5);
+    for i in 105..110 {
+        assert_eq!(map.hash_map.get(&i), Some(&i));
+    }
+}
+
+#[test]
+fn test_linked_hash_mapx_set_max_size_zero_disables_eviction() {
+    let mut map = LinkedHashMapx::new(2);
+    map.insert(1, 1);
+    map.insert(2, 2);
+
+    map.set_max_size(0);
+    map.insert(3, 3);
+
+    assert_eq!(map.hash_map.len(), 3);
+    assert_eq!(map.hash_map.get(&1), Some(&1));
+    assert_eq!(map.hash_map.get(&2), Some(&2));
+    assert_eq!(map.hash_map.get(&3), Some(&3));
+}

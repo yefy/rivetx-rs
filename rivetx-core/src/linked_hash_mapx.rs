@@ -24,12 +24,26 @@ impl<K: Hash + Eq, V> LinkedHashMapx<K, V> {
 }
 
 impl<K: Hash + Eq, V, S: BuildHasher> LinkedHashMapx<K, V, S> {
+    const TRIM_CHECK_TIMES: usize = 10;
+
+    fn trim_to_max_size(&mut self) {
+        for _ in 0..Self::TRIM_CHECK_TIMES {
+            if self.max_size > 0 && self.hash_map.len() > self.max_size {
+                self.hash_map.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+
+    pub fn set_max_size(&mut self, max_size: usize) {
+        self.max_size = max_size;
+    }
+
     //max_size只支持insert函数
     pub fn insert(&mut self, k: K, v: V) -> Option<V> {
         let value = self.hash_map.insert(k, v);
-        if self.max_size > 0 && self.hash_map.len() > self.max_size {
-            self.hash_map.pop_front();
-        }
+        self.trim_to_max_size();
         value
     }
 
@@ -38,10 +52,7 @@ impl<K: Hash + Eq, V, S: BuildHasher> LinkedHashMapx<K, V, S> {
         match entry {
             Entry::Vacant(vacant_entry) => {
                 vacant_entry.insert(v);
-
-                if self.max_size > 0 && self.hash_map.len() > self.max_size {
-                    self.hash_map.pop_front();
-                }
+                self.trim_to_max_size();
                 true
             }
             Entry::Occupied(_) => false,
