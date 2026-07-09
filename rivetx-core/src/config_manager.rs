@@ -1,9 +1,12 @@
 use anyhow::{Context, Result};
 use arc_swap::ArcSwap;
 use std::fmt::Debug;
+use std::future::Future;
 use std::marker::PhantomData;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::pin::Pin;
+use std::sync::{Arc, Mutex};
+use tokio::task::JoinHandle;
 
 pub trait Config: Debug + Default + Send + Sync + 'static {
     fn refresh_rate(&self) -> u64;
@@ -74,6 +77,7 @@ impl<T: Config + serde::de::DeserializeOwned> ConfigParser<T> for YamlParser<T> 
 pub struct ConfigManager<T: Config, P: ConfigParser<T> = TomlParser<T>> {
     config: Arc<ArcSwap<T>>,
     parser: Arc<P>, // ✅ 使用 Arc 包裹 Parser
+    watcher: Arc<Mutex<Option<JoinHandle<()>>>>,
     _marker: PhantomData<T>,
 }
 
@@ -82,11 +86,60 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
         Self {
             config: Arc::new(ArcSwap::from_pointee(T::default())),
             parser: Arc::new(parser), // ✅ 放入 Arc
+            watcher: Arc::new(Mutex::new(None)),
             _marker: PhantomData,
         }
     }
 
+    pub fn stop(&self) {
+        if let Some(handle) = self.watcher.lock().unwrap().take() {
+            handle.abort();
+        }
+    }
+
+    pub fn is_watching(&self) -> bool {
+        self.watcher.lock().unwrap().is_some()
+    }
+
     pub fn init(&self, path: PathBuf) -> Result<()> {
+        self.start_watch(path, None)
+    }
+
+    pub fn init_call<D, F>(&self, path: PathBuf, call: Option<(D, F)>) -> Result<()>
+    where
+        D: Clone + Send + Sync + 'static,
+        F: Fn(D) + Send + Sync + 'static,
+    {
+        let on_reload = call.map(|(data, callback)| {
+            let callback = Arc::new(callback);
+            OnReload::Sync(Box::new(move || {
+                callback(data.clone());
+            }))
+        });
+        self.start_watch(path, on_reload)
+    }
+
+    pub fn init_async_call<D, F, Fut>(&self, path: PathBuf, call: Option<(D, F)>) -> Result<()>
+    where
+        D: Clone + Send + Sync + 'static,
+        F: Fn(D) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        let on_reload = call.map(|(data, callback)| {
+            let callback = Arc::new(callback);
+            OnReload::Async(Box::new(move || {
+                let data = data.clone();
+                let callback = callback.clone();
+                Box::pin(async move {
+                    callback(data).await;
+                }) as Pin<Box<dyn Future<Output = ()> + Send>>
+            }))
+        });
+        self.start_watch(path, on_reload)
+    }
+
+    fn start_watch(&self, path: PathBuf, on_reload: Option<OnReload>) -> Result<()> {
+        self.stop();
         self.load(&path)?;
 
         let mut curr_modified = std::fs::metadata(&path)
@@ -98,7 +151,7 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
         let parser = self.parser.clone(); // ✅ 克隆 Arc（不会克隆内部数据）
         let path_clone = path.clone();
 
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             loop {
                 if refresh_rate <= 5 {
                     refresh_rate = 5;
@@ -117,10 +170,17 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
                     let content = std::fs::read_to_string(&path_clone)
                         .context("Failed to read config file")?;
                     let new_config = parser.parse(&content)?;
+                    let new_config = Arc::new(new_config);
 
-                    config_ref.store(Arc::new(new_config));
-                    refresh_rate = config_ref.load_full().refresh_rate();
+                    config_ref.store(new_config.clone());
+                    refresh_rate = new_config.refresh_rate();
                     curr_modified = modified;
+
+                    match &on_reload {
+                        Some(OnReload::Sync(callback)) => callback(),
+                        Some(OnReload::Async(callback)) => callback().await,
+                        None => {}
+                    }
 
                     log::info!("Config reloaded from {:?}", path_clone);
                     Ok(())
@@ -132,6 +192,7 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
                 }
             }
         });
+        *self.watcher.lock().unwrap() = Some(handle);
 
         Ok(())
     }
@@ -152,3 +213,8 @@ impl<T: Config, P: ConfigParser<T> + 'static> ConfigManager<T, P> {
 pub type TomlConfigManager<T> = ConfigManager<T, TomlParser<T>>;
 pub type JsonConfigManager<T> = ConfigManager<T, JsonParser<T>>;
 pub type YamlConfigManager<T> = ConfigManager<T, YamlParser<T>>;
+
+enum OnReload {
+    Sync(Box<dyn Fn() + Send + Sync>),
+    Async(Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>),
+}
