@@ -18,7 +18,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            refresh_rate: 5,
+            refresh_rate: 3,
             app_name: String::new(),
             max_connections: 0,
         }
@@ -41,7 +41,7 @@ pub fn config() -> Arc<AppConfig> {
 pub async fn config_manager_tests() -> anyhow::Result<()> {
     let config_path = PathBuf::from("./conf/app.toml");
 
-    let updated = r#"refresh_rate = 5
+    let updated = r#"refresh_rate = 3
 app_name = "rivetx-example-reloaded"
 max_connections = 300
 "#;
@@ -60,7 +60,9 @@ max_connections = 300
 
     CONFIGX.store(Arc::new(manager));
 
-    let updated = r#"refresh_rate = 5
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    let updated = r#"refresh_rate = 3
 app_name = "rivetx-example-reloaded"
 max_connections = 200
 "#;
@@ -77,7 +79,7 @@ max_connections = 200
     assert_eq!(cfg.app_name, "rivetx-example-reloaded");
     assert_eq!(cfg.max_connections, 200);
 
-    let original = r#"refresh_rate = 5
+    let original = r#"refresh_rate = 3
 app_name = "rivetx-example"
 max_connections = 100
 "#;
@@ -103,8 +105,8 @@ struct CallbackData {
 async fn init_call_tests() -> anyhow::Result<()> {
     let config_path = PathBuf::from("./conf/app_callback.toml");
 
-    let initial = r#"refresh_rate = 5
-app_name = "rivetx-example-callback"
+    let initial = r#"refresh_rate = 3
+app_name = "rivetx-example"
 max_connections = 100
 "#;
     std::fs::write(&config_path, initial).context("Failed to write callback config file")?;
@@ -133,7 +135,8 @@ max_connections = 100
         )
         .here()?;
 
-    let updated = r#"refresh_rate = 5
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    let updated = r#"refresh_rate = 3
 app_name = "rivetx-example-callback-reloaded"
 max_connections = 300
 "#;
@@ -167,7 +170,7 @@ max_connections = 300
 async fn init_async_call_tests() -> anyhow::Result<()> {
     let config_path = PathBuf::from("./conf/app_async_callback.toml");
 
-    let initial = r#"refresh_rate = 5
+    let initial = r#"refresh_rate = 3
 app_name = "rivetx-example-async-callback"
 max_connections = 100
 "#;
@@ -202,7 +205,8 @@ max_connections = 100
         )
         .here()?;
 
-    let updated = r#"refresh_rate = 5
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    let updated = r#"refresh_rate = 3
 app_name = "rivetx-example-async-callback-reloaded"
 max_connections = 400
 "#;
@@ -236,7 +240,7 @@ max_connections = 400
 async fn stop_tests() -> anyhow::Result<()> {
     let config_path = PathBuf::from("./conf/app_stop.toml");
 
-    let initial = r#"refresh_rate = 5
+    let initial = r#"refresh_rate = 3
 app_name = "rivetx-example-stop-v1"
 max_connections = 100
 "#;
@@ -248,7 +252,8 @@ max_connections = 100
     manager.init(config_path.clone()).here()?;
     assert!(manager.is_watching());
 
-    let updated_v1 = r#"refresh_rate = 5
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    let updated_v1 = r#"refresh_rate = 3
 app_name = "rivetx-example-stop-v2"
 max_connections = 200
 "#;
@@ -287,7 +292,7 @@ max_connections = 200
     manager.stop();
     assert!(!manager.is_watching());
 
-    let updated_v3 = r#"refresh_rate = 5
+    let updated_v3 = r#"refresh_rate = 3
 app_name = "rivetx-example-stop-v3"
 max_connections = 300
 "#;
