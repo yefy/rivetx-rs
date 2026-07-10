@@ -6,9 +6,23 @@ use serde::ser::Serializer;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 use std::sync::Arc;
 
-const OWNED_STRING_MAX_SIZE: usize = 128;
+const DEFAULT_OWNED_STRING_MAX_SIZE: usize = 128;
+const MIN_OWNED_STRING_MAX_SIZE: usize = 32;
+
+static OWNED_STRING_MAX_SIZE: AtomicUsize = AtomicUsize::new(DEFAULT_OWNED_STRING_MAX_SIZE);
+
+pub fn set_owned_string_max_size(max_size: usize) -> usize {
+    let max_size = max_size.max(MIN_OWNED_STRING_MAX_SIZE);
+    OWNED_STRING_MAX_SIZE.store(max_size, AtomicOrdering::Relaxed);
+    max_size
+}
+
+pub fn owned_string_max_size() -> usize {
+    OWNED_STRING_MAX_SIZE.load(AtomicOrdering::Relaxed)
+}
 
 pub enum RivetxString {
     Owned(String),
@@ -53,7 +67,7 @@ impl From<String> for RivetxString {
         if s.is_empty() {
             return RivetxString::from("");
         }
-        if s.len() > OWNED_STRING_MAX_SIZE {
+        if s.len() > owned_string_max_size() {
             RivetxString::from(Arc::new(s))
         } else {
             RivetxString::Owned(s)
