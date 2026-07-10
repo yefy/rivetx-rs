@@ -110,10 +110,7 @@ fn test_rivetx_str_from_arc_string_variants() {
 #[test]
 fn test_rivetx_str_from_string_and_arc() {
     assert_eq!(RivetxStr::from("hello".to_string()).as_str(), "hello");
-    assert_eq!(
-        RivetxStr::from(Arc::<str>::from("hello")).as_str(),
-        "hello"
-    );
+    assert_eq!(RivetxStr::from(Arc::<str>::from("hello")).as_str(), "hello");
     assert_eq!(
         RivetxStr::from(Arc::new("hello".to_string())).as_str(),
         "hello"
@@ -183,7 +180,10 @@ fn test_rivetx_str_as_ref_and_borrow() {
 
 #[test]
 fn test_rivetx_str_to_rivetx_string() {
-    assert_eq!(RivetxStr::from("hello").to_rivetx_string().as_str(), "hello");
+    assert_eq!(
+        RivetxStr::from("hello").to_rivetx_string().as_str(),
+        "hello"
+    );
     assert_eq!(
         RivetxStr::from(&owned("hello")).to_rivetx_string().as_str(),
         "hello"
@@ -282,7 +282,10 @@ fn test_rivetx_str_borrowed_sources_do_not_allocate_on_view() {
     let arc_value = arc("hello");
 
     assert!(matches!(RivetxStr::from(local.as_str()), RivetxStr::Ref(_)));
-    assert!(matches!(RivetxStr::from(&rs), RivetxStr::RivetxStringRef(_)));
+    assert!(matches!(
+        RivetxStr::from(&rs),
+        RivetxStr::RivetxStringRef(_)
+    ));
     assert!(matches!(
         RivetxStr::from(&arc_value),
         RivetxStr::ArcStringRef(_)
