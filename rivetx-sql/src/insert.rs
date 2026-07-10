@@ -7,6 +7,7 @@ use mysql_async::Value;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
+use rivetx_core::rivetx_str::RivetxStr;
 
 #[derive(Debug, Clone)]
 pub struct InsertResult {
@@ -16,11 +17,11 @@ pub struct InsertResult {
 
 pub async fn insert_raw(
     rivetx_sql: &RivetxSql,
-    table: &RivetxString,
+    table: &RivetxStr<'_>,
     cols: &[RivetxString],
     mut vals: Vec<Vec<Value>>,
     mut max_per_batch: usize,
-    on_duplicate_update: &RivetxString,
+    on_duplicate_update: &RivetxStr<'_>,
     ignore_duplicate: bool,
     mut execution_timeout: Duration,
 ) -> anyhow::Result<InsertResult> {
@@ -160,11 +161,11 @@ pub async fn insert<T: FromSqlRow + crate::ToSqlValues>(
 
     insert_raw(
         rivetx_sql,
-        table,
+        &table.into(),
         &cols,
         vals,
         max_per_batch,
-        on_duplicate_update,
+        &on_duplicate_update.into(),
         ignore_duplicate,
         execution_timeout,
     )

@@ -8,6 +8,7 @@ use mysql_async::prelude::{FromRow, Queryable};
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
+use rivetx_core::rivetx_str::RivetxStr;
 
 pub trait OrderFieldSelectValue {
     fn order_field_select_value(&self) -> SqlValue;
@@ -15,12 +16,12 @@ pub trait OrderFieldSelectValue {
 
 pub async fn select_raw<T>(
     rivetx_sql: &RivetxSql,
-    table: &RivetxString,
-    join: &RivetxString,
+    table: &RivetxStr<'_>,
+    join: &RivetxStr<'_>,
     query_cond: &QueryCond,
-    cond: &RivetxString,
+    cond: &RivetxStr<'_>,
     cond_args: &Vec<SqlValue>,
-    order: &RivetxString,
+    order: &RivetxStr<'_>,
     limit: usize,
     offset: usize,
     batch_size: usize,
@@ -357,10 +358,10 @@ where
 
             let values = select_raw::<T>(
                 &self.rivetx_sql,
-                &self.table,
-                &self.join,
+                &(&self.table).into(),
+                &(&self.join).into(),
                 &self.query_cond,
-                &current_cond,
+                &(&current_cond).into(),
                 &current_args,
                 &order_clause.into(),
                 current_limit,
@@ -386,12 +387,12 @@ where
         if self.order_field.is_empty() {
             select_raw(
                 &self.rivetx_sql,
-                &self.table,
-                &self.join,
+                &(&self.table).into(),
+                &(&self.join).into(),
                 &self.query_cond,
-                &self.cond,
+                  &(&self.cond).into(),
                 &self.cond_args,
-                &self.order,
+                    &(&self.order).into(),
                 self.limit,
                 self.offset,
                 self.batch_size,

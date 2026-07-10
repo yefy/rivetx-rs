@@ -307,3 +307,14 @@ fn test_rivetx_str_to_arc_string_reuses_shared_storage() {
     let cloned_view = view.clone();
     assert_eq!(cloned_view.to_arc_string().as_str(), "hello");
 }
+
+#[test]
+fn test_join() {
+    let parts = [RivetxStr::from("a"), RivetxStr::from("b")];
+    assert_eq!(parts.join(", "), "a, b");
+
+    let a = RivetxStr::from("a");
+    let b = RivetxStr::from("b");
+    let refs = [&a, &b];
+    assert_eq!(refs.join(", "), "a, b");
+}

@@ -6,6 +6,7 @@ use anyhow::{anyhow, Result};
 use mysql_async::{prelude::*, Value};
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
+use rivetx_core::rivetx_str::RivetxStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct UpdateResult {
@@ -15,7 +16,7 @@ pub struct UpdateResult {
 
 pub async fn update_raw(
     rivetx_sql: &RivetxSql,
-    table: &RivetxString,
+    table: &RivetxStr<'_>,
     cols: &Vec<RivetxString>,
     mut vals: Vec<Vec<Value>>,
     join_on: &Vec<RivetxString>,
@@ -148,7 +149,7 @@ where
 
     update_raw(
         rivetx_sql,
-        table,
+        &table.into(),
         &cols,
         vals_2d,
         join_on,

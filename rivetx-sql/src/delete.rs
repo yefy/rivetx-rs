@@ -11,6 +11,7 @@ use std::fmt::Write;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 use tokio::time::timeout;
+use rivetx_core::rivetx_str::RivetxStr;
 
 #[derive(Debug, Default)]
 pub struct DeleteResult {
@@ -20,9 +21,9 @@ pub struct DeleteResult {
 
 pub async fn delete_raw(
     rivetx_sql: &RivetxSql,
-    table: &RivetxString,
+    table: &RivetxStr<'_>,
     g: &QueryCond,
-    cond: &RivetxString,
+    cond: &RivetxStr<'_>,
     cond_args: &Vec<SqlValue>,
     limit: usize,
     mut execution_timeout: Duration,
@@ -90,24 +91,24 @@ pub async fn delete_raw(
         }
 
         let mut sql = format!("DELETE FROM {}", table);
-        let mut where_parts: Vec<String> = Vec::with_capacity(128);
+        let mut where_parts: Vec<RivetxStr<'_>> = Vec::with_capacity(128);
 
         // FixedCols
         for col in &g.fixed_cols {
-            where_parts.push(format!("{} = ?", col));
+            where_parts.push(format!("{} = ?", col).into());
         }
 
         // Cond
         if !cond.is_empty() {
-            where_parts.push(cond.to_string());
+            where_parts.push(cond.as_str().into());
         }
 
         // InCols
         if !g.in_cols.is_empty() && !chunk.is_empty() {
-            let col_part = if g.in_cols.len() > 1 {
+            let col_part: RivetxStr<'_> = if g.in_cols.len() > 1 {
                 format!("({})", g.in_cols.join(", ")).into()
             } else {
-                g.in_cols[0].clone()
+                (&g.in_cols[0]).into()
             };
 
             let mut tuples = Vec::with_capacity(128);
@@ -116,7 +117,7 @@ pub async fn delete_raw(
                 tuples.push(format!("({})", placeholders));
                 args.extend(row_vals);
             }
-            where_parts.push(format!("{} IN ({})", col_part, tuples.join(", ")));
+            where_parts.push(format!("{} IN ({})", col_part, tuples.join(", ")).into());
         }
 
         if !where_parts.is_empty() {
@@ -304,9 +305,9 @@ impl DeleteBuilder {
             if self.reserve_field.is_empty() {
                 delete_raw(
                     &self.rivetx_sql,
-                    &self.table,
+                    &(&self.table).into(),
                     &self.query_cond,
-                    &self.cond,
+                    &(&self.cond).into(),
                     &self.cond_args,
                     self.limit,
                     self.timeout,

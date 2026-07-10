@@ -2,11 +2,11 @@ use crate::conn::RivetxSql;
 use crate::FromSqlRow;
 use anyhow::Context;
 use mysql_async::prelude::Queryable;
-use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
+use rivetx_core::rivetx_str::RivetxStr;
 
-pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxString) -> String {
+pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxStr) -> String {
     let meta = T::get_struct_meta();
     let mut query = format!("CREATE TABLE IF NOT EXISTS {} (", table_name);
 
@@ -51,7 +51,7 @@ pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxString) -> St
 
 pub async fn create_table<T: FromSqlRow>(
     rivetx_sql: &RivetxSql,
-    table_name: &RivetxString,
+    table_name: &RivetxStr<'_>,
     execution_timeout: Duration,
 ) -> anyhow::Result<()> {
     let sql = crate::create::generate_create_table_sql::<T>(table_name);

@@ -8,8 +8,6 @@ use std::sync::Arc;
 use crate::arc_string::ArcString;
 use crate::rivetx_string::RivetxString;
 
-/// A unified string view that can borrow or own any Rivetx string type with minimal copying.
-#[derive(Clone)]
 pub enum RivetxStr<'a> {
     Ref(&'a str),
     Static(&'static str),
@@ -249,6 +247,13 @@ impl<'a> AsRef<[u8]> for RivetxStr<'a> {
 }
 
 impl<'a> std::borrow::Borrow<str> for RivetxStr<'a> {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl<'a> std::borrow::Borrow<str> for &'a RivetxStr<'a> {
+    #[inline]
     fn borrow(&self) -> &str {
         self.as_str()
     }
