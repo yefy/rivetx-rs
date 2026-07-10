@@ -138,8 +138,8 @@ pub async fn test_open_rivetx_sql() -> anyhow::Result<RivetxSql> {
 }
 
 pub fn test_open_rivetx_sql_sync() -> anyhow::Result<RivetxSql> {
-    let mysql_url = "mysql://root:Yfygz@389@192.168.80.139:3306/test_db".to_string();
-    //let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
+    //let mysql_url = "mysql://root:Yfygz@389@192.168.80.139:3306/test_db".to_string();
+    let mysql_url = "mysql://root:Yfygz@389@192.168.192.139:3306/test_db".to_string();
     let max_open_conns = 10;
     let max_idle_conns = 5;
     let rivetx_sql = RivetxSql::new(&mysql_url, max_idle_conns, max_open_conns).here()?;
@@ -291,4 +291,15 @@ pub fn zero_naive_date_time() -> NaiveDateTime {
         .unwrap()
         .and_hms_opt(0, 0, 0)
         .unwrap()
+}
+
+#[cfg(test)]
+pub(crate) static TEST_DB_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Serialize integration tests that share the same physical MySQL tables.
+#[cfg(test)]
+pub(crate) fn lock_test_db() -> std::sync::MutexGuard<'static, ()> {
+    TEST_DB_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }

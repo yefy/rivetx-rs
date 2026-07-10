@@ -463,12 +463,9 @@ impl<T> Queue<T> {
     /// 1. O(1)：将哨兵重置为空状态，len 归零
     /// 2. O(n)：单次前向遍历旧链，逐节点释放所有权
     ///
-    /// Panic 安全性：
-    ///   步骤 1 完成后哨兵已与旧链断开。若某节点的 `T::drop` panic，
-    ///   未使用 catch_unwind 的实现会直接 unwind 出循环，丢失 `next` 局部变量，
-    ///   导致剩余节点永久内存泄漏（虽然内存泄漏在 Rust 中是 safe，但对工业级
-    ///   基础设施仍不可接受）。此处用 `catch_unwind` 隔离单节点的 drop panic，
-    ///   将泄漏范围限制在那一个节点，后续节点的清理保证继续进行。
+    /// Panic 行为：
+    ///   若某节点的 `T::drop` panic，panic 会立即向调用方传播（与 `Vec`/`HashMap`
+    ///   等标准库一致），由上层决定如何处理。此时剩余节点可能无法继续清理。
     pub fn clear(&mut self) {
         if self.empty() {
             return;
@@ -514,7 +511,7 @@ impl<T> Queue<T> {
                     //剩余节点可能泄漏。
                     //这与 Vec/HashMap 等标准库行为一致。
                     //panic 说明业务逻辑异常了，需要尽快通知上层, 不应该屏蔽panic
-                    drop(node_box)
+                    drop(node_box);
                 }
 
                 cur = next;

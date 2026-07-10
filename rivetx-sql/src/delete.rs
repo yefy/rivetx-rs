@@ -6,12 +6,12 @@ use anyhow::Context;
 use anyhow::{anyhow, Result};
 use futures::future::{BoxFuture, FutureExt};
 use mysql_async::{prelude::*, Row, Value};
+use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::fmt::Write;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 use tokio::time::timeout;
-use rivetx_core::rivetx_str::RivetxStr;
 
 #[derive(Debug, Default)]
 pub struct DeleteResult {

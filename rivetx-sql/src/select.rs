@@ -5,10 +5,10 @@ use crate::{FromSqlRow, StructMeta};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
 use mysql_async::prelude::{FromRow, Queryable};
+use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
-use rivetx_core::rivetx_str::RivetxStr;
 
 pub trait OrderFieldSelectValue {
     fn order_field_select_value(&self) -> SqlValue;
@@ -390,9 +390,9 @@ where
                 &(&self.table).into(),
                 &(&self.join).into(),
                 &self.query_cond,
-                  &(&self.cond).into(),
+                &(&self.cond).into(),
                 &self.cond_args,
-                    &(&self.order).into(),
+                &(&self.order).into(),
                 self.limit,
                 self.offset,
                 self.batch_size,

@@ -17,6 +17,19 @@ pub enum RivetxStr<'a> {
     ArcString(ArcString),
 }
 
+impl<'a> Clone for RivetxStr<'a> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Ref(s) => Self::Ref(*s),
+            Self::Static(s) => Self::Static(s),
+            Self::RivetxStringRef(s) => Self::RivetxStringRef(*s),
+            Self::ArcStringRef(s) => Self::ArcStringRef(*s),
+            Self::RivetxString(s) => Self::RivetxString(s.clone()),
+            Self::ArcString(s) => Self::ArcString(s.clone()),
+        }
+    }
+}
+
 impl<'a> RivetxStr<'a> {
     pub fn from_str(s: &'a str) -> Self {
         if s.is_empty() {

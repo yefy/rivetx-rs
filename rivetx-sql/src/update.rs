@@ -4,9 +4,9 @@ use crate::{FromSqlRow, ToSqlValues};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
 use mysql_async::{prelude::*, Value};
+use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
-use rivetx_core::rivetx_str::RivetxStr;
 
 #[derive(Debug, Clone, Default)]
 pub struct UpdateResult {

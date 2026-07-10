@@ -271,6 +271,7 @@ fn test_rivetx_str_clone_preserves_content() {
     let cloned = original.clone();
     assert_eq!(original, cloned);
     assert_eq!(cloned.as_str(), "hello");
+    assert!(matches!(cloned, RivetxStr::RivetxStringRef(_)));
 }
 
 // ────────── Zero-copy behavior ──────────
@@ -305,6 +306,7 @@ fn test_rivetx_str_to_arc_string_reuses_shared_storage() {
     assert_eq!(converted.as_str(), "hello");
 
     let cloned_view = view.clone();
+    assert!(matches!(cloned_view, RivetxStr::RivetxStringRef(_)));
     assert_eq!(cloned_view.to_arc_string().as_str(), "hello");
 }
 

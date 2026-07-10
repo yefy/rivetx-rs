@@ -322,6 +322,7 @@ mod tests {
     /// Runs sequentially to avoid DB race conditions.
     #[tokio::test]
     async fn test_update_builder_integration() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = make_mock_sql();
 
         // Run all integration tests sequentially

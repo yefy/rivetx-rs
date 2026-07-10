@@ -639,22 +639,13 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
-    // clear() Panic Safety：T::drop panic 不导致全链泄漏
+    // clear() Panic 传播：T::drop panic 立即向上抛出
     // -----------------------------------------------------------------------
 
-    /// 【漏洞验证】clear() 中某节点 T::drop panic 时，后续节点仍被正确处理。
-    ///
-    /// 场景：队列 [A(panic), B(no-handle), C(user-handle)]。
-    ///   步骤 1：哨兵已断开（O(1)）。
-    ///   步骤 2 若无 catch_unwind：A 的 drop panic → unwind 出 while 循环 →
-    ///     B/C 的队列所有权永不归还 → 内存泄漏（B 无用户句柄 = 彻底泄漏）。
-    ///   步骤 2 有 catch_unwind：A 的 panic 被捕获，循环继续 → B/C 正常处理 →
-    ///     C 被 detach，B 的队列份额归还（B 无用户句柄则立即释放）。
-    ///
-    /// 验证手段：若 clear() 向调用方传播了 panic，`assert!(n_c.is_detached())`
-    /// 永远不会被执行，测试在 panic 处失败，证明旧行为有缺陷。
+    /// clear() 中某节点 T::drop panic 时，panic 应向调用方传播（与 Vec/HashMap 一致）。
     #[test]
-    fn test_clear_panic_in_drop_does_not_propagate() {
+    #[should_panic(expected = "intentional drop panic for id=0")]
+    fn test_clear_panic_in_drop_propagates() {
         use std::sync::atomic::{AtomicUsize, Ordering as AO};
         use std::sync::Arc;
 
@@ -676,17 +667,14 @@ mod tests {
         let dc = drop_count.clone();
         let mut queue = Queue::<MaybePanic>::new();
 
-        // 节点 A（id=0）：无用户句柄，drop 时 panic
         queue.insert_tail(&QueueNode::new(MaybePanic {
             id: 0,
             drop_count: dc.clone(),
         }));
-        // 节点 B（id=1）：无用户句柄，drop 正常
         queue.insert_tail(&QueueNode::new(MaybePanic {
             id: 1,
             drop_count: dc.clone(),
         }));
-        // 节点 C（id=2）：有用户句柄，验证其是否被正确 detach
         let n_c = QueueNode::new(MaybePanic {
             id: 2,
             drop_count: dc.clone(),
@@ -694,27 +682,13 @@ mod tests {
         queue.insert_tail(&n_c);
         assert_eq!(queue.len(), 3);
 
-        // clear() 不应向调用方传播 A 的 drop panic
-        // 若没有 catch_unwind 修复，此处 panic，下方 assert 永远不执行 → 测试失败
         queue.clear();
-
-        assert!(queue.empty(), "clear() 后队列应为空");
-        // C 被正确处理：in_queue = false（detached）
-        assert!(n_c.is_detached(), "C 在 clear() 后应被 detach");
-
-        // A 和 B 的 drop 都被调用（drop_count 至少包含 A/B 的计数）
-        // C 的队列所有权也被释放，C 的 data drop 还没发生（n_c 仍存活）
-        // id=0 的 drop 运行了（即使 panic 也运行到 fetch_add 那一行）
-        // id=1, id=2(队列份额) 各运行一次 → drop_count >= 2（A=1, B=1）
-        let count = drop_count.load(AO::Relaxed);
-        assert!(count >= 2, "drop_count 应 >= 2，实际 = {}", count);
     }
 
-    /// 【Panic Safety 补充】Queue::drop 透传 clear()：同样不泄漏后续节点
+    /// Queue::drop 透传 clear()：T::drop panic 同样向上传播。
     #[test]
-    fn test_queue_drop_panic_in_t_does_not_leak_rest() {
-        // 只验证 drop(queue) 不会因为 T::drop panic 而 abort 进程
-        // （double-panic = abort；有 catch_unwind 后 Queue::drop 中的 clear() 不 panic）
+    #[should_panic(expected = "drop panic")]
+    fn test_queue_drop_panic_in_t_propagates() {
         struct PanicOnDrop;
         impl Drop for PanicOnDrop {
             fn drop(&mut self) {
@@ -723,15 +697,11 @@ mod tests {
         }
 
         let mut queue = Queue::<PanicOnDrop>::new();
-        // 节点无用户句柄；drop(queue) 触发 clear()，clear() 内 catch_unwind 隔离 panic
         queue.insert_tail(&QueueNode::new(PanicOnDrop));
         queue.insert_tail(&QueueNode::new(PanicOnDrop));
         queue.insert_tail(&QueueNode::new(PanicOnDrop));
 
-        // 若没有 catch_unwind，此处 drop(queue) 会 panic，
-        // 再加上测试框架的 panic 处理会触发 double-panic → 进程 abort。
-        // 有 catch_unwind，drop(queue) 安全完成。
-        drop(queue); // 不应 panic，不应 abort
+        drop(queue);
     }
 
     /// 【漏洞 3 验证】insert_after 中 len 赋值不触发旧值 Drop。

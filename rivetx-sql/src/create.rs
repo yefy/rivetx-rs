@@ -2,9 +2,9 @@ use crate::conn::RivetxSql;
 use crate::FromSqlRow;
 use anyhow::Context;
 use mysql_async::prelude::Queryable;
+use rivetx_core::rivetx_str::RivetxStr;
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
-use rivetx_core::rivetx_str::RivetxStr;
 
 pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxStr) -> String {
     let meta = T::get_struct_meta();

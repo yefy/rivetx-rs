@@ -270,6 +270,7 @@ mod tests {
     /// Test creating test_data table and verify its structure
     #[tokio::test]
     async fn test_create_table_test_data() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
 
         // Drop table first to ensure clean state
@@ -363,6 +364,7 @@ mod tests {
     /// Test creating test_key table and verify its structure
     #[tokio::test]
     async fn test_create_table_test_key() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
 
         // Drop table first to ensure clean state
@@ -419,6 +421,7 @@ mod tests {
     /// Test create_table idempotency - calling twice should not error
     #[tokio::test]
     async fn test_create_table_idempotent() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
 
         // Drop table first
@@ -454,6 +457,7 @@ mod tests {
     /// Test create_table with different timeout values
     #[tokio::test]
     async fn test_create_table_with_timeout() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
 
         // Drop table first
@@ -502,6 +506,7 @@ mod tests {
     /// Test create_table with very short timeout that may fail
     #[tokio::test]
     async fn test_create_table_with_very_short_timeout() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
 
         // Drop table first
@@ -533,6 +538,7 @@ mod tests {
     /// Test creating multiple tables in sequence
     #[tokio::test]
     async fn test_create_multiple_tables() {
+        let _guard = crate::util_tests::lock_test_db();
         let rivetx_sql = get_rivetx_sql().await;
         // Drop tables first
         let _ = test_data_drop_table(&rivetx_sql).await;

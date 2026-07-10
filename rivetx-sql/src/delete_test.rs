@@ -4,8 +4,8 @@ mod tests {
     use crate::sql_value::SqlValue;
     use crate::util::QueryCond;
     use crate::util_tests::{
-        test_data_clear_table, test_data_count_rows, test_data_create_table, test_open_rivetx_sql,
-        zero_naive_date_time, TestData,
+        lock_test_db, test_data_clear_table, test_data_count_rows, test_data_create_table,
+        test_open_rivetx_sql, zero_naive_date_time, TestData,
     };
     use crate::{insert::insert, util_tests::test_data_query_all_no_id};
     use anyhow::Context;
@@ -16,12 +16,8 @@ mod tests {
 
     // These exec() tests share the same physical table (`test_data`) and therefore must not run
     // concurrently, otherwise they can interleave truncate/insert and violate unique constraints.
-    static TEST_DATA_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
     fn lock_test_data() -> std::sync::MutexGuard<'static, ()> {
-        TEST_DATA_LOCK
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+        lock_test_db()
     }
 
     /// Helper function to build DELETE SQL similar to delete_raw
@@ -598,7 +594,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_builder_exec_where_eq_affects_one() -> anyhow::Result<()> {
-        let _guard = TEST_DATA_LOCK.lock().unwrap();
+        let _guard = lock_test_data();
         let rivetx_sql = test_open_rivetx_sql().await.here()?;
         seed_test_data(&rivetx_sql).await.here()?;
 
@@ -620,7 +616,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_builder_exec_where_in_affects_two() -> anyhow::Result<()> {
-        let _guard = TEST_DATA_LOCK.lock().unwrap();
+        let _guard = lock_test_data();
         let rivetx_sql = test_open_rivetx_sql().await.here()?;
         seed_test_data(&rivetx_sql).await.here()?;
 
@@ -647,7 +643,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_builder_exec_where_raw_with_args() -> anyhow::Result<()> {
-        let _guard = TEST_DATA_LOCK.lock().unwrap();
+        let _guard = lock_test_data();
         let rivetx_sql = test_open_rivetx_sql().await.here()?;
         seed_test_data(&rivetx_sql).await.here()?;
 
@@ -666,7 +662,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_builder_exec_limit() -> anyhow::Result<()> {
-        let _guard = TEST_DATA_LOCK.lock().unwrap();
+        let _guard = lock_test_data();
         let rivetx_sql = test_open_rivetx_sql().await.here()?;
         seed_test_data(&rivetx_sql).await.here()?;
 
