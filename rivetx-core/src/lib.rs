@@ -38,3 +38,6 @@ pub mod rivetx_str;
 pub mod rivetx_str_test;
 pub mod rivetx_string_tests;
 pub mod spawnx_tests;
+pub mod memory_cache;
+#[cfg(test)]
+pub mod memory_cache_test;
