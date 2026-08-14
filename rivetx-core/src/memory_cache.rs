@@ -502,7 +502,7 @@ impl MemoryCache {
     //
 
     pub fn len(&self) -> u64 {
-        self.simple_cache.entry_count()
+        self.simple_cache.iter().count() as u64
     }
 
     //
@@ -1186,7 +1186,7 @@ impl MemoryCache {
     //
 
     pub fn table_count(&self) -> u64 {
-        self.table_cache.entry_count()
+        self.table_cache.iter().count() as u64
     }
 
     //
