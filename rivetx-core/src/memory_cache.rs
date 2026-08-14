@@ -61,7 +61,7 @@ impl<V> ValueWithTtl<V> {
             expires_at: None,
         }
     }
-
+    #[allow(dead_code)]
     fn remaining_ttl(&self) -> Option<Duration> {
         self.expires_at
             .map(|expires_at| {
