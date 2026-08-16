@@ -404,10 +404,10 @@ mod tests {
             .unwrap();
 
         // Query all rows with a condition that matches everything
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("1", 1)
             .order("order by index_col, key_col")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -428,10 +428,10 @@ mod tests {
             .unwrap();
 
         // Query with where_eq on index_col = 1 (should return 2 rows: abc, def)
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
             .order("order by key_col")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -449,10 +449,10 @@ mod tests {
             .unwrap();
 
         // Query with where_cond
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_cond("index_col = ?", vec![1i32.into()])
             .where_cond("and key_col = ?", vec!["abc".into()])
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -470,12 +470,12 @@ mod tests {
             .unwrap();
 
         // Query with combined where_cond in a single call
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_cond(
                 "index_col = ? and key_col = ?",
                 vec![1i32.into(), "abc".into()],
             )
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -492,10 +492,10 @@ mod tests {
             .unwrap();
 
         // Query with order by key_col DESC
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
             .order("order by key_col desc")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -513,12 +513,12 @@ mod tests {
             .unwrap();
 
         // Query with limit and offset
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("1", 1)
             .order("order by index_col, key_col")
             .limit(2)
             .offset(1)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -537,7 +537,7 @@ mod tests {
             .unwrap();
 
         // Chain all builder methods
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
             .where_in(
                 vec!["key_col".into()],
@@ -549,7 +549,7 @@ mod tests {
             .offset(0)
             .batch_size(128)
             .timeout(Duration::from_secs(60))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -567,14 +567,14 @@ mod tests {
             .unwrap();
 
         // Query with where_in on single column
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
             .where_in(
                 vec!["key_col".into()],
                 vec![vec!["abc".into()], vec!["def".into()]],
             )
             .order("order by key_col")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -592,7 +592,7 @@ mod tests {
             .unwrap();
 
         // Query with where_in on multiple columns
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_in(
                 vec!["key_col".into(), "name_id".into()],
                 vec![
@@ -601,7 +601,7 @@ mod tests {
                 ],
             )
             .order("order by key_col")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -619,10 +619,10 @@ mod tests {
             .unwrap();
 
         // Query with empty where_in should return an error
-        let result = SelectBuilder::<TestData>::new(rivetx_sql, "test_data")
+        let result = SelectBuilder::<TestData>::new("test_data")
             .where_eq("index_col", 1i32)
             .where_in(vec!["key_col".into()], vec![])
-            .exec()
+            .exec(rivetx_sql)
             .await;
 
         assert!(result.is_err());
@@ -643,10 +643,10 @@ mod tests {
             .unwrap();
 
         // Query with where_eq on different types
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
             .where_eq("key_col", "abc")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -664,11 +664,11 @@ mod tests {
             .unwrap();
 
         // Query with custom batch_size
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("1", 1)
             .order("order by index_col, key_col")
             .batch_size(2)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -684,11 +684,11 @@ mod tests {
             .unwrap();
 
         // Query with custom timeout
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("1", 1)
             .order("order by index_col, key_col")
             .timeout(Duration::from_secs(30))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -704,10 +704,10 @@ mod tests {
             .unwrap();
 
         // Query with order_field_select DESC (limit 2)
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .order_field_select("id", true, 2)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -725,10 +725,10 @@ mod tests {
             .unwrap();
 
         // Query with order_field_select ASC (limit 2)
-        let result: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
             .order_field_select("id", false, 2)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 

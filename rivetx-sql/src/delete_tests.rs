@@ -383,14 +383,14 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
     }
 
     {
-        let res = DeleteBuilder::new(rivetx_sql, "test_data")
+        let res = DeleteBuilder::new("test_data")
             .where_eq("index_col", 0)
             .where_eq("key_col", "abc")
             .where_in(
                 vec!["name_id".into(), "name_index".into()],
                 vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
             )
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
         if res.total_affected != 1 {
@@ -403,12 +403,12 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
     }
 
     {
-        let res = DeleteBuilder::new(rivetx_sql, "test_data")
+        let res = DeleteBuilder::new("test_data")
             .where_in(
                 vec!["name_id".into(), "name_index".into()],
                 vec![vec![4.into(), 1004.into()], vec![5.into(), 1005.into()]],
             )
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -426,10 +426,10 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
     }
 
     {
-        let res = DeleteBuilder::new(rivetx_sql, "test_data")
+        let res = DeleteBuilder::new("test_data")
             .where_eq("index_col", 1)
             .where_eq("key_col", "xyz")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -603,13 +603,13 @@ async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql)
         return Err(anyhow!("expected 10 rows"));
     }
 
-    let res = DeleteBuilder::new(rivetx_sql, "test_data")
+    let res = DeleteBuilder::new("test_data")
         .where_in(
             vec!["name_id".into(), "name_index".into()],
             vec![vec![4.into(), 1004.into()], vec![5.into(), 1005.into()]],
         )
         .limit(1)
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 
@@ -775,9 +775,9 @@ async fn test_batch_delete_per_group_struct2_point_reserve(rivetx_sql: &RivetxSq
 
         let mut reserve_size = i;
 
-        let res = DeleteBuilder::new(rivetx_sql, "test_data")
+        let res = DeleteBuilder::new("test_data")
             .reserve_size("id", reserve_size, Duration::from_millis(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 

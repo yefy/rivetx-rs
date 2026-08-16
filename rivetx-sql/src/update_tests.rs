@@ -271,10 +271,10 @@ async fn test_batch_update_struct2(rivetx_sql: &RivetxSql) -> Result<()> {
 
     // Execute using the Builder pattern
     let update_len = updates.len() as u64;
-    let res = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+    let res = UpdateBuilder::new("test_data", updates)
         .join_on(join_on)
         .set_expr(set_expr)
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 
@@ -428,10 +428,10 @@ async fn test_batch_update_struct2_point(rivetx_sql: &RivetxSql) -> Result<()> {
     ];
 
     let update_len = updates.len() as u64;
-    let res = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+    let res = UpdateBuilder::new("test_data", updates)
         .join_on(join_on)
         .set_expr(set_expr)
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 

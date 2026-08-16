@@ -4,7 +4,6 @@ use crate::util::TIMEOUT;
 use crate::util::{QueryCond, BATCH_SIZE};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
-use futures::future::{BoxFuture, FutureExt};
 use mysql_async::{prelude::*, Row, Value};
 use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
@@ -173,7 +172,6 @@ pub async fn delete_raw(
 }
 
 pub struct DeleteBuilder {
-    rivetx_sql: RivetxSql,
     table: RivetxString,
     query_cond: QueryCond,
     cond: RivetxString,
@@ -186,9 +184,8 @@ pub struct DeleteBuilder {
 }
 
 impl DeleteBuilder {
-    pub fn new(rivetx_sql: &RivetxSql, table: impl Into<RivetxString>) -> Self {
+    pub fn new(table: impl Into<RivetxString>) -> Self {
         Self {
-            rivetx_sql: rivetx_sql.clone(),
             table: table.into(),
             query_cond: QueryCond::default(),
             cond: RivetxString::default(),
@@ -251,13 +248,26 @@ impl DeleteBuilder {
         self
     }
 
-    async fn exec_reserve_size(&self) -> Result<DeleteResult> {
+    async fn exec_delete(&self, rivetx_sql: &RivetxSql) -> Result<DeleteResult> {
+        delete_raw(
+            rivetx_sql,
+            &(&self.table).into(),
+            &self.query_cond,
+            &(&self.cond).into(),
+            &self.cond_args,
+            self.limit,
+            self.timeout,
+        )
+        .await
+    }
+
+    async fn exec_reserve_size(&self, rivetx_sql: &RivetxSql) -> Result<DeleteResult> {
         let sql = format!(
             "SELECT {} FROM {} ORDER BY {} DESC LIMIT 1 OFFSET {}",
             self.reserve_field, self.table, self.reserve_field, self.reserve_size
         );
 
-        let mut conn = self.rivetx_sql.get_conn().await.here()?;
+        let mut conn = rivetx_sql.get_conn().await.here()?;
         let row_opt: Option<Row> = conn.query_first(&sql).await.here()?;
 
         let key = match row_opt {
@@ -278,10 +288,10 @@ impl DeleteBuilder {
                 self.limit
             };
 
-            let res = DeleteBuilder::new(&self.rivetx_sql, self.table.as_str().to_string())
+            let res = DeleteBuilder::new(self.table.as_str().to_string())
                 .where_raw(format!("{} <= ?", self.reserve_field), vec![key.clone()])
                 .limit(limit)
-                .exec()
+                .exec_delete(rivetx_sql)
                 .await
                 .here()?;
 
@@ -300,23 +310,11 @@ impl DeleteBuilder {
         Ok(res_final)
     }
 
-    pub fn exec(&self) -> BoxFuture<'_, Result<DeleteResult>> {
-        async move {
-            if self.reserve_field.is_empty() {
-                delete_raw(
-                    &self.rivetx_sql,
-                    &(&self.table).into(),
-                    &self.query_cond,
-                    &(&self.cond).into(),
-                    &self.cond_args,
-                    self.limit,
-                    self.timeout,
-                )
-                .await
-            } else {
-                self.exec_reserve_size().await
-            }
+    pub async fn exec(&self, rivetx_sql: &RivetxSql) -> Result<DeleteResult> {
+        if self.reserve_field.is_empty() {
+            self.exec_delete(rivetx_sql).await
+        } else {
+            self.exec_reserve_size(rivetx_sql).await
         }
-        .boxed()
     }
 }

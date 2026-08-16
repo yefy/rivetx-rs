@@ -173,7 +173,6 @@ pub async fn insert<T: FromSqlRow + crate::ToSqlValues>(
 }
 
 pub struct InsertBuilder<T: FromSqlRow + crate::ToSqlValues> {
-    rivetx_sql: RivetxSql,
     table: RivetxString,
     data: Vec<T>,
     max_per_batch: usize,
@@ -183,9 +182,8 @@ pub struct InsertBuilder<T: FromSqlRow + crate::ToSqlValues> {
 }
 
 impl<T: FromSqlRow + crate::ToSqlValues> InsertBuilder<T> {
-    pub fn new(rivetx_sql: &RivetxSql, table: impl Into<RivetxString>, data: Vec<T>) -> Self {
+    pub fn new(table: impl Into<RivetxString>, data: Vec<T>) -> Self {
         Self {
-            rivetx_sql: rivetx_sql.clone(),
             table: table.into(),
             data,
             max_per_batch: BATCH_SIZE,
@@ -219,9 +217,9 @@ impl<T: FromSqlRow + crate::ToSqlValues> InsertBuilder<T> {
         self
     }
 
-    pub async fn exec(self) -> anyhow::Result<InsertResult> {
+    pub async fn exec(self, rivetx_sql: &RivetxSql) -> anyhow::Result<InsertResult> {
         insert(
-            &self.rivetx_sql,
+            rivetx_sql,
             &self.table,
             &self.data,
             self.max_per_batch,

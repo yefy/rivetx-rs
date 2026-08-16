@@ -909,11 +909,11 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> Result<()> 
     ];
 
     let on_duplicate = "name_id = VALUES(name_id), name_index = name_index + VALUES(name_index)";
-    let result = InsertBuilder::new(rivetx_sql, "test_data", test_data.clone())
+    let result = InsertBuilder::new("test_data", test_data.clone())
         .batch_size(2)
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 
@@ -1136,11 +1136,11 @@ pub async fn test_batch_new_insert_struct_point(rivetx_sql: &RivetxSql) -> Resul
     ];
 
     let on_duplicate = "name_id = VALUES(name_id), name_index = name_index + VALUES(name_index)";
-    let result = InsertBuilder::new(rivetx_sql, "test_data", test_data.clone())
+    let result = InsertBuilder::new("test_data", test_data.clone())
         .batch_size(2)
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 

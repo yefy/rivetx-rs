@@ -138,11 +138,11 @@ pub async fn test_batch_insert_struct(rivetx_sql: &RivetxSql) -> anyhow::Result<
     }
 
     let on_duplicate = "name_id = VALUES(name_id), name_index = name_index + VALUES(name_index)";
-    InsertBuilder::new(rivetx_sql, "test_data", data)
+    InsertBuilder::new("test_data", data)
         .batch_size(2)
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 
@@ -216,8 +216,8 @@ pub async fn test_batch_insert_struct_no_duplicate_update(
         updated_at: zero_naive_date_time(),
     }];
 
-    InsertBuilder::new(rivetx_sql, "test_data", data)
-        .exec()
+    InsertBuilder::new("test_data", data)
+        .exec(rivetx_sql)
         .await
         .here()?;
     assert_eq!(test_data_count_rows(rivetx_sql, "test_data").await, 1);
@@ -248,11 +248,11 @@ pub async fn test_batch_new_insert_struct(rivetx_sql: &RivetxSql) -> anyhow::Res
     }
 
     let on_duplicate = "name_id = VALUES(name_id), name_index = name_index + VALUES(name_index)";
-    let result = InsertBuilder::new(rivetx_sql, "test_data", test_data.clone())
+    let result = InsertBuilder::new("test_data", test_data.clone())
         .batch_size(2)
         .on_duplicate_update(on_duplicate)
         .timeout(Duration::from_secs(10))
-        .exec()
+        .exec(rivetx_sql)
         .await
         .here()?;
 

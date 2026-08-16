@@ -158,10 +158,10 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("1", 1)
             .order("order by index_col, key_col")
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -185,10 +185,10 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     for i in 0..20 {
         let mut limit = i;
         info!("OrderFieldSelect true index:{}", i);
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .order_field_select("id", true, i)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -219,10 +219,10 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     for i in 0..20 {
         let mut limit = i;
         info!("OrderFieldSelect false index:{}", i);
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .order_field_select("id", false, i)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -251,10 +251,10 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res1: Vec<TestDataNoExport> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestDataNoExport> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -270,11 +270,11 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     {
         info!("test WhereIn");
         let in_vals = vec![vec!["yyy".into()], vec!["xxx".into()]];
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1)
             .where_in(vec!["key_col".into()], in_vals)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -288,11 +288,11 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res = SelectBuilder::<TestData>::new(rivetx_sql, "test_data")
+        let res = SelectBuilder::<TestData>::new("test_data")
             .where_eq("index_col", 1)
             .where_in(vec!["key_col".into()], vec![])
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await;
 
         if res.is_err() {
@@ -333,10 +333,10 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1)
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
         info!("res1:{:?}", res1);
@@ -346,11 +346,11 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_cond("index_col = ?", vec![1.into()])
             .where_cond("and key_col = ?", vec!["abc".into()])
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 
@@ -361,13 +361,13 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
-        let res1: Vec<TestData> = SelectBuilder::new(rivetx_sql, "test_data")
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_cond(
                 "index_col = ? and key_col = ?",
                 vec![1.into(), "abc".into()],
             )
             .timeout(Duration::from_secs(10))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .here()?;
 

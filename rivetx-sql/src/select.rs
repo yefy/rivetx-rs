@@ -203,7 +203,6 @@ where
 }
 
 pub struct SelectBuilder<T> {
-    rivetx_sql: RivetxSql,
     table: RivetxString,
     join: RivetxString,
     query_cond: QueryCond,
@@ -223,9 +222,8 @@ impl<T> SelectBuilder<T>
 where
     T: FromSqlRow + FromRow + OrderFieldSelectValue + Send + Sync + 'static,
 {
-    pub fn new(rivetx_sql: &RivetxSql, table: impl Into<RivetxString>) -> Self {
+    pub fn new(table: impl Into<RivetxString>) -> Self {
         Self {
-            rivetx_sql: rivetx_sql.clone(),
             table: table.into(),
             join: RivetxString::default(),
             query_cond: QueryCond::new(),
@@ -309,7 +307,12 @@ where
         self
     }
 
-    async fn exec_order_field_select(&self, sort: &str, operator: &str) -> Result<Vec<T>> {
+    async fn exec_order_field_select(
+        &self,
+        rivetx_sql: &RivetxSql,
+        sort: &str,
+        operator: &str,
+    ) -> Result<Vec<T>> {
         let total_limit = self.limit;
         let batch_size = if self.batch_size <= 0 {
             BATCH_SIZE
@@ -357,7 +360,7 @@ where
             let current_offset = if result.is_empty() { self.offset } else { 0 };
 
             let values = select_raw::<T>(
-                &self.rivetx_sql,
+                rivetx_sql,
                 &(&self.table).into(),
                 &(&self.join).into(),
                 &self.query_cond,
@@ -383,10 +386,10 @@ where
         Ok(result)
     }
 
-    pub async fn exec(self) -> Result<Vec<T>> {
+    pub async fn exec(self, rivetx_sql: &RivetxSql) -> Result<Vec<T>> {
         if self.order_field.is_empty() {
             select_raw(
-                &self.rivetx_sql,
+                rivetx_sql,
                 &(&self.table).into(),
                 &(&self.join).into(),
                 &self.query_cond,
@@ -401,9 +404,9 @@ where
             .await
         } else {
             if self.is_desc_order_field {
-                self.exec_order_field_select("DESC", "<").await
+                self.exec_order_field_select(rivetx_sql, "DESC", "<").await
             } else {
-                self.exec_order_field_select("ASC", ">").await
+                self.exec_order_field_select(rivetx_sql, "ASC", ">").await
             }
         }
     }

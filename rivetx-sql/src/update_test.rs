@@ -367,10 +367,10 @@ mod tests {
             "u.name_index = v.name_index".into(),
         ];
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(join_on)
             .set_expr(set_expr)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -442,10 +442,10 @@ mod tests {
             "u.name_index = u.name_index + v.name_index".into(),
         ];
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(join_on)
             .set_expr(set_expr)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -517,11 +517,11 @@ mod tests {
         ];
 
         // Use batch_size=2 to test batching logic (3 rows -> 2+1)
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(join_on)
             .set_expr(set_expr)
             .batch_size(2)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -592,11 +592,11 @@ mod tests {
             "u.name_index = v.name_index".into(),
         ];
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(join_on)
             .set_expr(set_expr)
             .timeout(Duration::from_secs(30))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -662,7 +662,7 @@ mod tests {
             .collect();
 
         // Chain all builder methods
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec![
                 "u.name_id = v.name_id".into(),
@@ -670,7 +670,7 @@ mod tests {
             ])
             .batch_size(50)
             .timeout(Duration::from_secs(60))
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -716,10 +716,10 @@ mod tests {
     async fn test_exec_empty_data(rivetx_sql: &crate::conn::RivetxSql) {
         let data: Vec<TestData> = Vec::new();
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
+        let result = UpdateBuilder::new("test_data", data)
             .join_on(vec!["id".into()])
             .set_expr(vec!["u.name_id = v.name_id".into()])
-            .exec()
+            .exec(rivetx_sql)
             .await;
 
         assert!(result.is_err());
@@ -734,10 +734,10 @@ mod tests {
     async fn test_exec_empty_join_on(rivetx_sql: &crate::conn::RivetxSql) {
         let data = vec![TestData::default()];
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
+        let result = UpdateBuilder::new("test_data", data)
             .join_on(vec![])
             .set_expr(vec!["u.name_id = v.name_id".into()])
-            .exec()
+            .exec(rivetx_sql)
             .await;
 
         assert!(result.is_err());
@@ -752,10 +752,10 @@ mod tests {
     async fn test_exec_empty_set_expr(rivetx_sql: &crate::conn::RivetxSql) {
         let data = vec![TestData::default()];
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", data)
+        let result = UpdateBuilder::new("test_data", data)
             .join_on(vec!["id".into()])
             .set_expr(vec![])
-            .exec()
+            .exec(rivetx_sql)
             .await;
 
         assert!(result.is_err());
@@ -790,14 +790,14 @@ mod tests {
             .collect();
 
         // batch_size(0) should use default BATCH_SIZE
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .batch_size(0)
             .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec![
                 "u.name_id = v.name_id".into(),
                 "u.name_index = v.name_index".into(),
             ])
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -863,14 +863,14 @@ mod tests {
             .collect();
 
         // timeout(0) should use default TIMEOUT
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .timeout(Duration::from_secs(0))
             .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec![
                 "u.name_id = v.name_id".into(),
                 "u.name_index = v.name_index".into(),
             ])
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 
@@ -960,14 +960,14 @@ mod tests {
             })
             .collect();
 
-        let result = UpdateBuilder::new(rivetx_sql, "test_data", updates)
+        let result = UpdateBuilder::new("test_data", updates)
             .join_on(vec!["index_col".into(), "key_col".into()])
             .set_expr(vec![
                 "u.name_id = v.name_id".into(),
                 "u.name_index = v.name_index".into(),
             ])
             .batch_size(2)
-            .exec()
+            .exec(rivetx_sql)
             .await
             .unwrap();
 

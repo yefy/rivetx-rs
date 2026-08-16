@@ -161,7 +161,6 @@ where
 }
 
 pub struct UpdateBuilder<T> {
-    rivetx_sql: RivetxSql,
     table: RivetxString,
     data: Vec<T>,
     max_per_batch: usize,
@@ -174,9 +173,8 @@ impl<T> UpdateBuilder<T>
 where
     T: FromSqlRow + ToSqlValues + Send + Sync,
 {
-    pub fn new(rivetx_sql: &RivetxSql, table: impl Into<RivetxString>, data: Vec<T>) -> Self {
+    pub fn new(table: impl Into<RivetxString>, data: Vec<T>) -> Self {
         Self {
-            rivetx_sql: rivetx_sql.clone(),
             table: table.into(),
             data,
             max_per_batch: BATCH_SIZE,
@@ -206,9 +204,9 @@ where
         self
     }
 
-    pub async fn exec(self) -> Result<UpdateResult> {
+    pub async fn exec(self, rivetx_sql: &RivetxSql) -> Result<UpdateResult> {
         update(
-            &self.rivetx_sql,
+            rivetx_sql,
             &self.table,
             &self.data,
             &self.join_on,
