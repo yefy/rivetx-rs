@@ -1,14 +1,12 @@
 use crate::conn::RivetxSql;
-use crate::sql_value::SqlValue;
+use crate::sql_cell::{FromSqlCells, SqlValue};
 use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
 use crate::{FromSqlRow, StructMeta};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
-use mysql_async::prelude::{FromRow, Queryable};
 use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
-use tokio::time::timeout;
 
 pub trait OrderFieldSelectValue {
     fn order_field_select_value(&self) -> SqlValue;
@@ -28,7 +26,7 @@ pub async fn select_raw<T>(
     mut execution_timeout: Duration,
 ) -> Result<Vec<T>>
 where
-    T: FromSqlRow + FromRow + OrderFieldSelectValue + Send + Sync + 'static,
+    T: FromSqlRow + FromSqlCells + OrderFieldSelectValue + Send + Sync + 'static,
 {
     let meta: StructMeta = T::get_struct_meta();
     let fields = &meta.cols;
@@ -153,17 +151,9 @@ where
             );
 
             let exec_start = Instant::now();
-            let mut conn = rivetx_sql.conn().await.here()?;
-            let rows: Vec<T> = timeout(execution_timeout, conn.exec(query, &args)).await
-                .map_err(|e| anyhow::anyhow!( "batch_start:{}, data_offset: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
-                chunk_index,
-                data_offset,
-                start_time.elapsed().as_millis(),
-                exec_start.elapsed().as_millis(),
-                total_count,
-                0,
-                0,
-                args, e))?
+            let exec_result = rivetx_sql
+                .exec(&query, &args, execution_timeout)
+                .await
                 .map_err(|e| anyhow::anyhow!( "batch_start:{}, data_offset: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
                 chunk_index,
                 data_offset,
@@ -173,6 +163,10 @@ where
                 0,
                 0,
                 args, e))?;
+            let mut rows = Vec::with_capacity(exec_result.rows.len());
+            for row in exec_result.rows {
+                rows.push(T::from_sql_cells(&exec_result.cols, &row).here()?);
+            }
             let batch_count = rows.len();
 
             result.extend(rows);
@@ -220,7 +214,7 @@ pub struct SelectBuilder<T> {
 
 impl<T> SelectBuilder<T>
 where
-    T: FromSqlRow + FromRow + OrderFieldSelectValue + Send + Sync + 'static,
+    T: FromSqlRow + FromSqlCells + OrderFieldSelectValue + Send + Sync + 'static,
 {
     pub fn new(table: impl Into<RivetxString>) -> Self {
         Self {

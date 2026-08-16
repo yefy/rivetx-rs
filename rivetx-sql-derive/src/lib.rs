@@ -25,6 +25,7 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
     let mut sql_field_names = Vec::new();
 
     let mut from_row_fields = Vec::new();
+    let mut from_sql_cell_fields = Vec::new();
 
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
@@ -63,6 +64,9 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
 
                 if is_ignore {
                     from_row_fields.push(quote! {
+                        #field_ident: Default::default()
+                    });
+                    from_sql_cell_fields.push(quote! {
                         #field_ident: Default::default()
                     });
                     continue;
@@ -201,6 +205,12 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
                     #field_ident: row.take(#sql_field_name)
                         .ok_or_else(|| mysql_common::FromRowError(row.clone()))?
                 });
+                from_sql_cell_fields.push(quote! {
+                    #field_ident: {
+                        let cell = ::rivetx_sql::take_sql_cell(cols, cells, #sql_field_name)?;
+                        ::rivetx_sql::FromSqlCell::from_sql_cell(cell)?
+                    }
+                });
             }
         }
     }
@@ -250,22 +260,34 @@ pub fn derive_from_row(input: TokenStream) -> TokenStream {
         // ToSqlValues
         // ========================
         impl ToSqlValues for #name {
-            fn to_values_discard_auto(&self) -> Vec<mysql_async::Value> {
+            fn to_values_discard_auto(&self) -> Vec<::rivetx_sql::SqlCell> {
                 vec![
-                    #( mysql_async::Value::from(self.#discard_auto_field_idents.clone()) ),*
+                    #( ::rivetx_sql::SqlCell::from(self.#discard_auto_field_idents.clone()) ),*
                 ]
             }
 
-            fn to_values(&self) -> Vec<mysql_async::Value> {
+            fn to_values(&self) -> Vec<::rivetx_sql::SqlCell> {
                 vec![
-                    #( mysql_async::Value::from(self.#field_idents.clone()) ),*
+                    #( ::rivetx_sql::SqlCell::from(self.#field_idents.clone()) ),*
                 ]
             }
         }
 
+        impl ::rivetx_sql::FromSqlCells for #name {
+            fn from_sql_cells(
+                cols: &[::rivetx_core::rivetx_string::RivetxString],
+                cells: &[::rivetx_sql::SqlCell],
+            ) -> anyhow::Result<Self> {
+                Ok(Self {
+                    #( #from_sql_cell_fields, )*
+                })
+            }
+        }
+
         // ========================
-        // ⭐⭐⭐ FromSqlRow
+        // mysql FromRow (native consumers)
         // ========================
+        #[cfg(feature = "native")]
         impl mysql_common::prelude::FromRow for #name {
             fn from_row_opt(mut row: mysql_common::Row)
                 -> Result<Self, mysql_common::FromRowError>

@@ -4,13 +4,10 @@ use crate::util::TIMEOUT;
 use crate::util::{QueryCond, BATCH_SIZE};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
-use mysql_async::{prelude::*, Row, Value};
 use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::fmt::Write;
 use std::time::{Duration, Instant};
-use tokio::time::sleep;
-use tokio::time::timeout;
 
 #[derive(Debug, Default)]
 pub struct DeleteResult {
@@ -30,8 +27,6 @@ pub async fn delete_raw(
     if execution_timeout == Duration::from_secs(0) {
         execution_timeout = TIMEOUT;
     }
-
-    let mut conn = rivetx_sql.get_conn().await.here()?;
 
     let mut total_affected = 0u64;
     let mut last_insert_id = 0u64;
@@ -128,15 +123,9 @@ pub async fn delete_raw(
         }
 
         let exec_start = Instant::now();
-        let result = timeout(execution_timeout, conn.exec_iter(&sql, &args)).await
-            .map_err(|e| anyhow::anyhow!( "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
-            total_affected - 0,
-            start_time.elapsed().as_millis(),
-            exec_start.elapsed().as_millis(),
-            total_affected,
-            0,
-            last_insert_id,
-            args, e))?
+        let result = rivetx_sql
+            .exec(&sql, &args, execution_timeout)
+            .await
             .map_err(|e| anyhow::anyhow!( "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
             total_affected - 0,
             start_time.elapsed().as_millis(),
@@ -145,8 +134,8 @@ pub async fn delete_raw(
             0,
             last_insert_id,
             args, e))?;
-        let affected = result.affected_rows();
-        let last_id = result.last_insert_id().unwrap_or(0);
+        let affected = result.affected;
+        let last_id = result.last_insert_id;
 
         total_affected += affected;
         if affected > 0 {
@@ -267,18 +256,15 @@ impl DeleteBuilder {
             self.reserve_field, self.table, self.reserve_field, self.reserve_size
         );
 
-        let mut conn = rivetx_sql.get_conn().await.here()?;
-        let row_opt: Option<Row> = conn.query_first(&sql).await.here()?;
-
-        let key = match row_opt {
-            Some(row) => row.get::<Value, usize>(0),
+        let result = rivetx_sql.exec(&sql, &[], self.timeout).await.here()?;
+        let key = match result.rows.first().and_then(|row| row.first()).cloned() {
+            Some(cell) => cell,
             None => return Ok(DeleteResult::default()),
         };
 
-        if key.is_none() {
+        if matches!(key, crate::sql_cell::SqlCell::Null) {
             return Ok(DeleteResult::default());
         }
-        let key = SqlValue::from(key.unwrap());
 
         let mut res_final = DeleteResult::default();
         loop {
@@ -303,7 +289,7 @@ impl DeleteBuilder {
             res_final.last_insert_id = res.last_insert_id;
 
             if !self.reserve_sleep.is_zero() {
-                sleep(self.reserve_sleep).await;
+                crate::util::sleep_duration(self.reserve_sleep).await;
             }
         }
 

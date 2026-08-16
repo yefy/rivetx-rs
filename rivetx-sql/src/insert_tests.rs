@@ -4,7 +4,6 @@ use crate::util_tests::*;
 use anyhow::Context;
 use chrono::Timelike;
 use mysql_async::prelude::Queryable;
-use mysql_async::Value;
 use std::time::Duration;
 
 pub async fn test_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
@@ -35,7 +34,7 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
         "updated_at".into(),
     ];
 
-    let mut vals: Vec<Vec<Value>> = Vec::new();
+    let mut vals: Vec<Vec<crate::SqlCell>> = Vec::new();
     for i in 0..10 {
         vals.push(vec![
             i.into(),

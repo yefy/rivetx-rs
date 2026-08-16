@@ -1,10 +1,7 @@
 use crate::conn::RivetxSql;
 use crate::FromSqlRow;
-use anyhow::Context;
-use mysql_async::prelude::Queryable;
 use rivetx_core::rivetx_str::RivetxStr;
 use std::time::{Duration, Instant};
-use tokio::time::timeout;
 
 pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxStr) -> String {
     let meta = T::get_struct_meta();
@@ -57,21 +54,10 @@ pub async fn create_table<T: FromSqlRow>(
     let sql = crate::create::generate_create_table_sql::<T>(table_name);
 
     let start_time = Instant::now();
-    let mut conn = rivetx_sql.conn().await.here()?;
-
     let exec_start = Instant::now();
-    timeout(execution_timeout, conn.query_drop(&sql))
+    rivetx_sql
+        .exec(&sql, &[], execution_timeout)
         .await
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "tableName:{}, allTime:{}ms, execTime:{}ms, query:{}, err:{}",
-                table_name,
-                start_time.elapsed().as_millis(),
-                exec_start.elapsed().as_millis(),
-                sql,
-                e
-            )
-        })?
         .map_err(|e| {
             anyhow::anyhow!(
                 "tableName:{}, allTime:{}ms, execTime:{}ms, query:{}, err:{}",

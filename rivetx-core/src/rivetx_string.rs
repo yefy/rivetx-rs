@@ -1,5 +1,7 @@
 use crate::arc_string::ArcString;
+#[cfg(feature = "mysql")]
 use mysql_common::value::convert::FromValue;
+#[cfg(feature = "mysql")]
 use mysql_common::value::Value;
 use serde::de::{Deserialize, Deserializer};
 use serde::ser::Serializer;
@@ -255,10 +257,12 @@ impl Hash for RivetxString {
     }
 }
 
+#[cfg(feature = "mysql")]
 impl FromValue for RivetxString {
     type Intermediate = String;
 }
 
+#[cfg(feature = "mysql")]
 impl From<RivetxString> for Value {
     fn from(arc_str: RivetxString) -> Value {
         Value::Bytes(arc_str.as_str().as_bytes().to_vec())

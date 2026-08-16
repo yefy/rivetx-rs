@@ -1,6 +1,8 @@
 use crate::rivetx_string::RivetxString;
 use core::ops::RangeBounds;
+#[cfg(feature = "mysql")]
 use mysql_common::value::convert::FromValue;
+#[cfg(feature = "mysql")]
 use mysql_common::value::Value;
 use serde::de::{Deserialize, Deserializer};
 use serde::ser::Serializer;
@@ -331,6 +333,7 @@ impl Hash for ArcString {
     }
 }
 
+#[cfg(feature = "mysql")]
 impl FromValue for ArcString {
     type Intermediate = String;
 
@@ -350,6 +353,7 @@ impl FromValue for ArcString {
     // }
 }
 
+#[cfg(feature = "mysql")]
 impl From<ArcString> for Value {
     fn from(arc_str: ArcString) -> Value {
         Value::Bytes(arc_str.as_str().as_bytes().to_vec()) // Convert ArcString to byte representation

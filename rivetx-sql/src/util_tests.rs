@@ -7,7 +7,6 @@ use crate::ToSqlValues;
 use anyhow::Context;
 use chrono::{NaiveDate, NaiveDateTime};
 use mysql_async::prelude::*;
-use mysql_async::Value;
 use std::time::Duration;
 
 #[derive(Default, Debug, Clone, PartialEq, FromSqlRow)]
@@ -47,7 +46,7 @@ pub struct TestData {
 
 impl crate::select::OrderFieldSelectValue for TestData {
     fn order_field_select_value(&self) -> SqlValue {
-        Value::from(self.id).into()
+        self.id.into()
     }
 }
 
@@ -65,7 +64,7 @@ pub struct TestDataNoExport {
 
 impl crate::select::OrderFieldSelectValue for TestDataNoExport {
     fn order_field_select_value(&self) -> SqlValue {
-        Value::from(0).into()
+        0u64.into()
     }
 }
 
@@ -83,7 +82,7 @@ pub struct TestDataByD {
 
 impl crate::select::OrderFieldSelectValue for TestDataByD {
     fn order_field_select_value(&self) -> SqlValue {
-        Value::from(0).into()
+        0u64.into()
     }
 }
 
@@ -103,7 +102,7 @@ pub struct TestDataByAs {
 
 impl crate::select::OrderFieldSelectValue for TestDataByAs {
     fn order_field_select_value(&self) -> SqlValue {
-        Value::from(0).into()
+        0u64.into()
     }
 }
 
@@ -129,7 +128,7 @@ pub struct Testkey {
 
 impl crate::select::OrderFieldSelectValue for Testkey {
     fn order_field_select_value(&self) -> SqlValue {
-        Value::from(0).into()
+        0u64.into()
     }
 }
 

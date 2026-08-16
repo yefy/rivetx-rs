@@ -1,37 +1,66 @@
+use crate::backend::SqlBackend;
+use crate::sql_cell::{SqlCell, SqlExecResult};
+#[cfg(feature = "native")]
 use anyhow::Context;
-use mysql_async::{Conn, Opts, OptsBuilder, Pool, PoolConstraints, PoolOpts};
+use rivetx_core::rivetx_string::RivetxString;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct RivetxSql {
-    pool: Arc<Pool>,
+    name: RivetxString,
+    backend: Arc<dyn SqlBackend>,
 }
 
 impl RivetxSql {
+    #[cfg(feature = "native")]
     pub fn new(url: &str, max_idle_conns: usize, max_open_conns: usize) -> anyhow::Result<Self> {
-        let opts = Opts::from_url(url).here()?;
-        let constraints = PoolConstraints::new(max_idle_conns, max_open_conns)
-            .ok_or(anyhow::anyhow!("PoolConstraints::new"))?;
-        let pool_opts = PoolOpts::new().with_constraints(constraints);
-
-        let opts = OptsBuilder::from_opts(opts).pool_opts(pool_opts);
-
-        let pool = Pool::new(opts);
-
+        let backend = Arc::new(crate::backend::MysqlBackend::new(
+            url,
+            max_idle_conns,
+            max_open_conns,
+        )?);
         Ok(Self {
-            pool: Arc::new(pool),
+            name: RivetxString::from("default"),
+            backend,
         })
     }
+
+    pub fn from_backend(name: impl Into<RivetxString>, backend: Arc<dyn SqlBackend>) -> Self {
+        Self {
+            name: name.into(),
+            backend,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+
+    pub async fn exec(
+        &self,
+        sql: &str,
+        args: &[SqlCell],
+        timeout: Duration,
+    ) -> anyhow::Result<SqlExecResult> {
+        self.backend.exec(sql, args, timeout).await
+    }
 }
 
+#[cfg(feature = "native")]
 impl RivetxSql {
-    pub async fn get_conn(&self) -> anyhow::Result<Conn> {
-        return self.conn().await;
+    pub async fn get_conn(&self) -> anyhow::Result<mysql_async::Conn> {
+        self.conn().await
     }
-    pub async fn conn(&self) -> anyhow::Result<Conn> {
-        self.pool
-            .get_conn()
+
+    pub async fn conn(&self) -> anyhow::Result<mysql_async::Conn> {
+        let pool = self
+            .backend
+            .mysql_pool()
+            .ok_or_else(|| anyhow::anyhow!("RivetxSql backend is not mysql"))?;
+        pool.get_conn()
             .await
             .map_err(|e| anyhow::anyhow!("pool.get_conn err:{}", e))
+            .here()
     }
 }

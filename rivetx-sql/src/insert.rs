@@ -1,13 +1,10 @@
 use crate::conn::RivetxSql;
+use crate::sql_cell::SqlCell;
 use crate::util::{BATCH_SIZE, TIMEOUT};
 use crate::FromSqlRow;
-use anyhow::Context;
-use mysql_async::prelude::Queryable;
-use mysql_async::Value;
 use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
-use tokio::time::timeout;
 
 #[derive(Debug, Clone)]
 pub struct InsertResult {
@@ -19,7 +16,7 @@ pub async fn insert_raw(
     rivetx_sql: &RivetxSql,
     table: &RivetxStr<'_>,
     cols: &[RivetxString],
-    mut vals: Vec<Vec<Value>>,
+    mut vals: Vec<Vec<SqlCell>>,
     mut max_per_batch: usize,
     on_duplicate_update: &RivetxStr<'_>,
     ignore_duplicate: bool,
@@ -91,18 +88,10 @@ pub async fn insert_raw(
             query.push_str(on_duplicate_update.as_str());
         }
 
-        let mut conn = rivetx_sql.conn().await.here()?;
         let exec_start = Instant::now();
-
-        timeout(execution_timeout, conn.exec_drop(&query, &flat_args)).await
-            .map_err(|e| anyhow::anyhow!(  "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
-            total_affected - 0,
-            start_time.elapsed().as_millis(),
-            exec_start.elapsed().as_millis(),
-            total_affected,
-            0,
-            last_insert_id,
-            flat_args, e))?
+        let result = rivetx_sql
+            .exec(&query, &flat_args, execution_timeout)
+            .await
             .map_err(|e| anyhow::anyhow!(  "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
             total_affected - 0,
             start_time.elapsed().as_millis(),
@@ -112,8 +101,8 @@ pub async fn insert_raw(
             last_insert_id,
             flat_args, e))?;
 
-        let affected = conn.affected_rows();
-        let last_id = conn.last_insert_id().unwrap_or(0);
+        let affected = result.affected;
+        let last_id = result.last_insert_id;
 
         total_affected += affected;
         if affected > 0 {

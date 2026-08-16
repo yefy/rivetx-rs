@@ -525,11 +525,13 @@ mod tests {
                 let _ = test_data_drop_table(&rivetx_sql).await;
             }
             Err(e) => {
-                let err_msg = e.to_string();
+                let err_msg = e.to_string().to_lowercase();
                 assert!(
-                    !(err_msg.contains("timed out") || err_msg.contains("timeout")),
+                    err_msg.contains("timed out")
+                        || err_msg.contains("timeout")
+                        || err_msg.contains("deadline"),
                     "Expected timeout error but got: {}",
-                    err_msg
+                    e
                 );
             }
         }

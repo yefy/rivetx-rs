@@ -1,9 +1,8 @@
 use crate::conn::RivetxSql;
+use crate::sql_cell::SqlCell;
 use crate::util::{BATCH_SIZE, TIMEOUT};
 use crate::{FromSqlRow, ToSqlValues};
-use anyhow::Context;
 use anyhow::{anyhow, Result};
-use mysql_async::{prelude::*, Value};
 use rivetx_core::rivetx_str::RivetxStr;
 use rivetx_core::rivetx_string::RivetxString;
 use std::time::{Duration, Instant};
@@ -18,7 +17,7 @@ pub async fn update_raw(
     rivetx_sql: &RivetxSql,
     table: &RivetxStr<'_>,
     cols: &Vec<RivetxString>,
-    mut vals: Vec<Vec<Value>>,
+    mut vals: Vec<Vec<SqlCell>>,
     join_on: &Vec<RivetxString>,
     set_expr: &Vec<RivetxString>,
     mut max_per_batch: usize,
@@ -77,17 +76,9 @@ pub async fn update_raw(
         );
 
         let exec_start = Instant::now();
-        let mut conn = rivetx_sql.get_conn().await.here()?;
-        let res = tokio::time::timeout(execution_timeout, conn.exec_iter(&query, &args))
+        let res = rivetx_sql
+            .exec(&query, &args, execution_timeout)
             .await
-            .map_err(|e| anyhow::anyhow!( "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
-            total_affected - 0,
-            start_time.elapsed().as_millis(),
-            exec_start.elapsed().as_millis(),
-            total_affected,
-            0,
-            last_insert_id,
-            args, e))?
             .map_err(|e| anyhow::anyhow!( "batch_start: {}, allTime: {}ms, execTime: {}ms, totalAffected: {}, rowsAffected: {}, lastInsertId: {}, args:{:?}, err:{}",
             total_affected - 0,
             start_time.elapsed().as_millis(),
@@ -97,8 +88,8 @@ pub async fn update_raw(
             last_insert_id,
             args, e))?;
 
-        let affected = res.affected_rows();
-        let last_id = res.last_insert_id().unwrap_or(0);
+        let affected = res.affected;
+        let last_id = res.last_insert_id;
 
         total_affected += affected;
         if affected > 0 {

@@ -3,16 +3,26 @@ name = "rivetx-sql"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["native"]
+native = [
+    "dep:mysql_async",
+    "dep:mysql_common",
+    "dep:tokio",
+    "chrono/clock",
+    "rivetx-core/native",
+]
+wasm = ["rivetx-core/wasm"]
+
 [dependencies]
 rivetx-sql-derive = { path = "../rivetx-sql-derive" }
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+tokio = { version = "1.32.0", optional = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
 serde = { version = "1.0", features = ["derive", "rc"] }
-#anyhow = "1.0.102"
 anyhow = { git = "https://github.com/yefy/anyhow.git" }
-#anyhow = { path = "../anyhow" }
 log = "0.4"
-mysql_common = "0.32.4"
-futures = "0.3.32"
-rivetx-core = { path = "../rivetx-core" }
-mysql_async = { version = "0.34", features = ["chrono"] }
-chrono = { version = "0.4", features = ["clock"] }
+mysql_common = { version = "0.32.4", optional = true }
+futures = "0.3.30"
+rivetx-core = { path = "../rivetx-core", default-features = false }
+mysql_async = { version = "=0.34.1", optional = true, features = ["chrono"] }
+chrono = { version = "=0.4.38", default-features = false, features = ["alloc"] }
+async-trait = "=0.1.80"

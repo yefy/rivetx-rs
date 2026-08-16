@@ -5,6 +5,15 @@ use std::time::Duration;
 pub const BATCH_SIZE: usize = 1024;
 pub const TIMEOUT: Duration = Duration::from_secs(15);
 
+pub async fn sleep_duration(d: Duration) {
+    #[cfg(feature = "native")]
+    tokio::time::sleep(d).await;
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = d;
+    }
+}
+
 #[derive(Clone)]
 pub struct QueryCond {
     pub fixed_cols: Vec<RivetxString>,

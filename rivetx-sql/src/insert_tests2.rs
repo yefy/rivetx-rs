@@ -9,7 +9,6 @@ use anyhow::{anyhow, Result};
 use chrono::Timelike;
 use log::info;
 use mysql_async::prelude::Queryable;
-use mysql_async::Value;
 use std::time::Duration;
 
 pub async fn test_insert2(rivetx_sql: &RivetxSql) -> Result<()> {
@@ -43,10 +42,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     ];
     let vals = vec![
         vec![
-            Value::from(0),
-            Value::from("abc"),
-            Value::from(1),
-            Value::from(1001),
+            crate::SqlCell::from(0),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(1),
+            crate::SqlCell::from(1001),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -56,10 +55,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(1),
-            Value::from("abc"),
-            Value::from(2),
-            Value::from(1002),
+            crate::SqlCell::from(1),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(2),
+            crate::SqlCell::from(1002),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -69,10 +68,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(2),
-            Value::from("abc"),
-            Value::from(3),
-            Value::from(1003),
+            crate::SqlCell::from(2),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(3),
+            crate::SqlCell::from(1003),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -82,10 +81,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(3),
-            Value::from("xyz"),
-            Value::from(4),
-            Value::from(1004),
+            crate::SqlCell::from(3),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(4),
+            crate::SqlCell::from(1004),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -95,10 +94,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(4),
-            Value::from("xyz"),
-            Value::from(5),
-            Value::from(1005),
+            crate::SqlCell::from(4),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(5),
+            crate::SqlCell::from(1005),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -108,10 +107,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(5),
-            Value::from("xyz"),
-            Value::from(6),
-            Value::from(1006),
+            crate::SqlCell::from(5),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(6),
+            crate::SqlCell::from(1006),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -121,10 +120,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(6),
-            Value::from("xyz"),
-            Value::from(7),
-            Value::from(1007),
+            crate::SqlCell::from(6),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(7),
+            crate::SqlCell::from(1007),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -134,10 +133,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(7),
-            Value::from("xyz"),
-            Value::from(8),
-            Value::from(1008),
+            crate::SqlCell::from(7),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(8),
+            crate::SqlCell::from(1008),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -147,10 +146,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(8),
-            Value::from("xyz"),
-            Value::from(9),
-            Value::from(1009),
+            crate::SqlCell::from(8),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(9),
+            crate::SqlCell::from(1009),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -160,10 +159,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(9),
-            Value::from("xyz"),
-            Value::from(10),
-            Value::from(1010),
+            crate::SqlCell::from(9),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(10),
+            crate::SqlCell::from(1010),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -195,10 +194,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
     }
 
     let vals_dup = vec![vec![
-        Value::from(0),
-        Value::from("abc"),
-        Value::from(11),
-        Value::from(11),
+        crate::SqlCell::from(0),
+        crate::SqlCell::from("abc"),
+        crate::SqlCell::from(11),
+        crate::SqlCell::from(11),
         chrono::Local::now()
             .naive_local()
             .with_nanosecond(0)
@@ -462,10 +461,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
     ];
     let vals = vec![
         vec![
-            Value::from(0),
-            Value::from("abc"),
-            Value::from(1),
-            Value::from(1001),
+            crate::SqlCell::from(0),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(1),
+            crate::SqlCell::from(1001),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -475,10 +474,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(1),
-            Value::from("abc"),
-            Value::from(2),
-            Value::from(1002),
+            crate::SqlCell::from(1),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(2),
+            crate::SqlCell::from(1002),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -488,10 +487,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(2),
-            Value::from("abc"),
-            Value::from(3),
-            Value::from(1003),
+            crate::SqlCell::from(2),
+            crate::SqlCell::from("abc"),
+            crate::SqlCell::from(3),
+            crate::SqlCell::from(1003),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -501,10 +500,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(3),
-            Value::from("xyz"),
-            Value::from(4),
-            Value::from(1004),
+            crate::SqlCell::from(3),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(4),
+            crate::SqlCell::from(1004),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -514,10 +513,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(4),
-            Value::from("xyz"),
-            Value::from(5),
-            Value::from(1005),
+            crate::SqlCell::from(4),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(5),
+            crate::SqlCell::from(1005),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -527,10 +526,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(5),
-            Value::from("xyz"),
-            Value::from(6),
-            Value::from(1006),
+            crate::SqlCell::from(5),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(6),
+            crate::SqlCell::from(1006),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -540,10 +539,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(6),
-            Value::from("xyz"),
-            Value::from(7),
-            Value::from(1007),
+            crate::SqlCell::from(6),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(7),
+            crate::SqlCell::from(1007),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -553,10 +552,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(7),
-            Value::from("xyz"),
-            Value::from(8),
-            Value::from(1008),
+            crate::SqlCell::from(7),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(8),
+            crate::SqlCell::from(1008),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -566,10 +565,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(8),
-            Value::from("xyz"),
-            Value::from(9),
-            Value::from(1009),
+            crate::SqlCell::from(8),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(9),
+            crate::SqlCell::from(1009),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -579,10 +578,10 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
             zero_naive_date_time().into(),
         ],
         vec![
-            Value::from(9),
-            Value::from("xyz"),
-            Value::from(10),
-            Value::from(1010),
+            crate::SqlCell::from(9),
+            crate::SqlCell::from("xyz"),
+            crate::SqlCell::from(10),
+            crate::SqlCell::from(1010),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)

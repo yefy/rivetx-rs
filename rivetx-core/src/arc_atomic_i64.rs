@@ -1,14 +1,19 @@
-use mysql_common::value::convert::FromValue;
-use mysql_common::value::convert::FromValueError;
-use mysql_common::value::Value;
 use serde::de::{Deserialize, Deserializer};
 use serde::ser::Serializer;
 use serde::Serialize;
+#[cfg(feature = "mysql")]
 use std::convert::TryFrom;
 use std::fmt;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
+
+#[cfg(feature = "mysql")]
+use mysql_common::value::convert::FromValue;
+#[cfg(feature = "mysql")]
+use mysql_common::value::convert::FromValueError;
+#[cfg(feature = "mysql")]
+use mysql_common::value::Value;
 
 #[derive(Clone)]
 pub struct ArcAtomicI64(pub Arc<AtomicI64>);
@@ -56,6 +61,7 @@ impl fmt::Display for ArcAtomicI64 {
     }
 }
 
+#[cfg(feature = "mysql")]
 impl TryFrom<Value> for ArcAtomicI64 {
     type Error = FromValueError;
 
@@ -77,10 +83,12 @@ impl TryFrom<Value> for ArcAtomicI64 {
     }
 }
 
+#[cfg(feature = "mysql")]
 impl FromValue for ArcAtomicI64 {
     type Intermediate = ArcAtomicI64;
 }
 
+#[cfg(feature = "mysql")]
 impl From<ArcAtomicI64> for Value {
     fn from(d: ArcAtomicI64) -> Value {
         Value::Int(d.as_i64() as i64)

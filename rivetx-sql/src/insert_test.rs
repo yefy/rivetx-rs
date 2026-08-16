@@ -9,7 +9,6 @@ use anyhow::{anyhow, Result};
 use chrono::Timelike;
 use log::info;
 use mysql_async::prelude::Queryable;
-use mysql_async::Value;
 use std::time::Duration;
 
 /// Entry point: runs all insert tests in sequence.
@@ -44,13 +43,13 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
         "updated_at".into(),
     ];
 
-    let mut vals: Vec<Vec<Value>> = Vec::new();
+    let mut vals: Vec<Vec<crate::SqlCell>> = Vec::new();
     for i in 0..10 {
         vals.push(vec![
-            Value::from(i),
-            Value::from(if i < 3 { "abc" } else { "xyz" }),
-            Value::from(i + 1),
-            Value::from(1001 + i),
+            crate::SqlCell::from(i),
+            crate::SqlCell::from(if i < 3 { "abc" } else { "xyz" }),
+            crate::SqlCell::from(i + 1),
+            crate::SqlCell::from(1001 + i),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
@@ -83,10 +82,10 @@ pub async fn test_batch_insert(rivetx_sql: &RivetxSql) -> Result<()> {
 
     // Verify `ON DUPLICATE KEY UPDATE`.
     let vals_dup = vec![vec![
-        Value::from(0),
-        Value::from("abc"),
-        Value::from(11),
-        Value::from(11),
+        crate::SqlCell::from(0),
+        crate::SqlCell::from("abc"),
+        crate::SqlCell::from(11),
+        crate::SqlCell::from(11),
         chrono::Local::now()
             .naive_local()
             .with_nanosecond(0)
@@ -187,13 +186,13 @@ pub async fn test_batch_insert_no_duplicate_update(rivetx_sql: &RivetxSql) -> Re
         "updated_at".into(),
     ];
 
-    let mut vals: Vec<Vec<Value>> = Vec::new();
+    let mut vals: Vec<Vec<crate::SqlCell>> = Vec::new();
     for i in 0..10 {
         vals.push(vec![
-            Value::from(i),
-            Value::from(if i < 3 { "abc" } else { "xyz" }),
-            Value::from(i + 1),
-            Value::from(1001 + i),
+            crate::SqlCell::from(i),
+            crate::SqlCell::from(if i < 3 { "abc" } else { "xyz" }),
+            crate::SqlCell::from(i + 1),
+            crate::SqlCell::from(1001 + i),
             chrono::Local::now()
                 .naive_local()
                 .with_nanosecond(0)
