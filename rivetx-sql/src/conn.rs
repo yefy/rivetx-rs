@@ -45,6 +45,10 @@ impl RivetxSql {
     ) -> anyhow::Result<SqlExecResult> {
         self.backend.exec(sql, args, timeout).await
     }
+
+    pub async fn disconnect(&self) -> anyhow::Result<()> {
+        self.backend.disconnect().await
+    }
 }
 
 #[cfg(feature = "native")]

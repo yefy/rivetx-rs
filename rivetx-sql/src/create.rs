@@ -3,6 +3,73 @@ use crate::FromSqlRow;
 use rivetx_core::rivetx_str::RivetxStr;
 use std::time::{Duration, Instant};
 
+fn quote_ident(name: &str) -> String {
+    format!("`{}`", name.replace('`', "``"))
+}
+
+pub fn generate_create_database_sql(db_name: &str) -> String {
+    format!("CREATE DATABASE IF NOT EXISTS {};", quote_ident(db_name))
+}
+
+async fn exec_create_database(
+    rivetx_sql: &RivetxSql,
+    db_name: &str,
+    execution_timeout: Duration,
+) -> anyhow::Result<()> {
+    if db_name.is_empty() {
+        return Err(anyhow::anyhow!("create_database: db name is empty"));
+    }
+    let sql = generate_create_database_sql(db_name);
+
+    let start_time = Instant::now();
+    let exec_start = Instant::now();
+    rivetx_sql
+        .exec(&sql, &[], execution_timeout)
+        .await
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "dbName:{}, allTime:{}ms, execTime:{}ms, query:{}, err:{}",
+                db_name,
+                start_time.elapsed().as_millis(),
+                exec_start.elapsed().as_millis(),
+                sql,
+                e
+            )
+        })?;
+
+    log::debug!(
+        "dbName:{}, allTime:{}ms, execTime:{}ms, query:{}",
+        db_name,
+        start_time.elapsed().as_millis(),
+        exec_start.elapsed().as_millis(),
+        sql
+    );
+    Ok(())
+}
+
+/// Connect with a URL that has no database (e.g. `mysql://user:pass@host:3306`),
+/// create the database, then disconnect.
+#[cfg(feature = "native")]
+pub async fn create_database(
+    url: &str,
+    db_name: &str,
+    execution_timeout: Duration,
+) -> anyhow::Result<()> {
+    let sql = RivetxSql::new(url, 1, 2)?;
+    let result = exec_create_database(&sql, db_name, execution_timeout).await;
+    let _ = sql.disconnect().await;
+    result
+}
+
+/// Create a database using an existing connection (wasm / already-open pool).
+pub async fn create_database_on(
+    rivetx_sql: &RivetxSql,
+    db_name: &str,
+    execution_timeout: Duration,
+) -> anyhow::Result<()> {
+    exec_create_database(rivetx_sql, db_name, execution_timeout).await
+}
+
 pub fn generate_create_table_sql<T: FromSqlRow>(table_name: &RivetxStr) -> String {
     let meta = T::get_struct_meta();
     let mut query = format!("CREATE TABLE IF NOT EXISTS {} (", table_name);

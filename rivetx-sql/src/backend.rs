@@ -17,6 +17,10 @@ pub trait SqlBackend: Send + Sync {
     fn mysql_pool(&self) -> Option<&mysql_async::Pool> {
         None
     }
+
+    async fn disconnect(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(feature = "native")]
@@ -98,5 +102,13 @@ impl SqlBackend for MysqlBackend {
 
     fn mysql_pool(&self) -> Option<&mysql_async::Pool> {
         Some(&self.pool)
+    }
+
+    async fn disconnect(&self) -> anyhow::Result<()> {
+        (*self.pool)
+            .clone()
+            .disconnect()
+            .await
+            .map_err(|e| anyhow::anyhow!("mysql pool disconnect err:{}", e))
     }
 }

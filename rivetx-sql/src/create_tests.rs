@@ -1,12 +1,27 @@
 use crate::conn::RivetxSql;
-use crate::create::create_table;
+use crate::create::{create_database_on, create_table};
 use crate::util_tests::*;
 use anyhow::Context;
 use mysql_async::prelude::Queryable;
 use std::time::Duration;
 
 pub async fn test_create(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
+    test_create_database(rivetx_sql).await.here()?;
     test_create_table(rivetx_sql).await.here()?;
+    Ok(())
+}
+
+pub async fn test_create_database(rivetx_sql: &RivetxSql) -> anyhow::Result<()> {
+    create_database_on(rivetx_sql, "test_db", Duration::from_secs(5))
+        .await
+        .here()?;
+
+    let mut conn = rivetx_sql.conn().await.here()?;
+    let dbs: Vec<String> = conn
+        .query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'test_db'")
+        .await
+        .here()?;
+    assert!(!dbs.is_empty(), "test_db database was not created");
     Ok(())
 }
 

@@ -13,6 +13,8 @@ extern crate self as rivetx_sql;
 
 #[cfg(all(test, feature = "native"))]
 mod create_test;
+#[cfg(all(test, feature = "native"))]
+mod create_database_test;
 #[cfg(feature = "native")]
 pub mod create_tests;
 #[cfg(all(test, feature = "native"))]
