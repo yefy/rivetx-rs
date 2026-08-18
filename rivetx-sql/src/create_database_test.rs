@@ -8,8 +8,20 @@ mod tests {
     use mysql_async::prelude::Queryable;
     use std::time::Duration;
 
-    const MYSQL_HOST: &str = "mysql://root:Yfygz@389@192.168.192.139:3306";
     const TEMP_DB: &str = "rivetx_create_db_ut";
+
+    fn mysql_host() -> &'static str {
+        static HOST: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        HOST.get_or_init(|| {
+            let host = std::env::var("TEST_RIVETX_MYSQL_HOST").unwrap_or_default();
+            let host = host.trim();
+            assert!(
+                !host.is_empty(),
+                "TEST_RIVETX_MYSQL_HOST must be set, e.g. mysql://user:pass@host:3306"
+            );
+            host.to_string()
+        })
+    }
 
     fn timeout() -> Duration {
         Duration::from_secs(5)
@@ -47,7 +59,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_database_rejects_empty_name() {
-        let err = create_database(MYSQL_HOST, "", timeout())
+        let err = create_database(mysql_host(), "", timeout())
             .await
             .unwrap_err();
         assert!(
@@ -59,7 +71,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_database_on_rejects_empty_name() {
-        let rivetx_sql = RivetxSql::new(MYSQL_HOST, 1, 2).unwrap();
+        let rivetx_sql = RivetxSql::new(mysql_host(), 1, 2).unwrap();
         let err = create_database_on(&rivetx_sql, "", timeout())
             .await
             .unwrap_err();
@@ -74,7 +86,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_database_with_url_without_db() {
         let _guard = lock_test_db();
-        create_database(MYSQL_HOST, "test_db", timeout())
+        create_database(mysql_host(), "test_db", timeout())
             .await
             .unwrap();
 
@@ -97,10 +109,10 @@ mod tests {
     #[tokio::test]
     async fn test_create_database_idempotent() {
         let _guard = lock_test_db();
-        create_database(MYSQL_HOST, "test_db", timeout())
+        create_database(mysql_host(), "test_db", timeout())
             .await
             .unwrap();
-        create_database(MYSQL_HOST, "test_db", timeout())
+        create_database(mysql_host(), "test_db", timeout())
             .await
             .unwrap();
 
@@ -112,10 +124,10 @@ mod tests {
     #[tokio::test]
     async fn test_create_database_new_schema_then_drop() {
         let _guard = lock_test_db();
-        let setup = RivetxSql::new(MYSQL_HOST, 1, 2).unwrap();
+        let setup = RivetxSql::new(mysql_host(), 1, 2).unwrap();
         drop_database(&setup, TEMP_DB).await;
 
-        create_database(MYSQL_HOST, TEMP_DB, timeout())
+        create_database(mysql_host(), TEMP_DB, timeout())
             .await
             .unwrap();
         assert!(schema_exists(&setup, TEMP_DB).await);
@@ -128,7 +140,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_database_on_new_schema_then_drop() {
         let _guard = lock_test_db();
-        let setup = RivetxSql::new(MYSQL_HOST, 1, 2).unwrap();
+        let setup = RivetxSql::new(mysql_host(), 1, 2).unwrap();
         drop_database(&setup, TEMP_DB).await;
 
         create_database_on(&setup, TEMP_DB, timeout())
