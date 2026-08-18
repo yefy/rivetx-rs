@@ -9,13 +9,10 @@
 #   also writes User env via setx (new cmd / PowerShell / Cursor terminals).
 #
 # Windows PowerShell (current session, then persist for new terminals):
-#   $env:TEST_RIVETX_MYSQL_HOST="mysql://root:Yfygz@389@127.0.0.1:3306"
-#   $env:TEST_RIVETX_MYSQL_URL="mysql://root:Yfygz@389@127.0.0.1:3306/test_db"
-#   $env:TEST_RIVETX_REDIS_URL="redis://127.0.0.1:6379"
-#   $env:TEST_ANYPROXY_MYSQL_HOST="mysql://root:Yfygz@389@127.0.0.1:3306"
-#   $env:TEST_ANYPROXY_MYSQL_URL="mysql://root:Yfygz@389@127.0.0.1:3306/test_db"
-#   $env:TEST_ANYPROXY_REDIS_URL="redis://127.0.0.1:6379"
 #   bash ./add_test_env_var.sh
+
+TEST_IP="127.0.0.1"
+TEST_PASSWORD="Yfygz@389"
 
 add_test_env() {
     local name="$1"
@@ -32,10 +29,10 @@ add_test_env() {
     esac
 }
 
-add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:Yfygz@389@127.0.0.1:3306"
-add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:Yfygz@389@127.0.0.1:3306/test_db"
-add_test_env TEST_RIVETX_REDIS_URL "redis://127.0.0.1:6379"
+add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306"
+add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db"
+add_test_env TEST_RIVETX_REDIS_URL "redis://${TEST_IP}:6379"
 
-add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:Yfygz@389@127.0.0.1:3306"
-add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:Yfygz@389@127.0.0.1:3306/test_db"
-add_test_env TEST_ANYPROXY_REDIS_URL "redis://127.0.0.1:6379"
+add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306"
+add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db"
+add_test_env TEST_ANYPROXY_REDIS_URL "redis://${TEST_IP}:6379"
