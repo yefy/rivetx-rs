@@ -47,6 +47,40 @@ async fn exec_create_database(
     Ok(())
 }
 
+/// Split a full MySQL URL into `(server_url, db_name)`.
+///
+/// `mysql://user:password@localhost:3306/database`
+/// -> (`mysql://user:password@localhost:3306`, `database`)
+///
+/// `mysql://user:password@localhost:3306/database?pool_max=10&compress=fast`
+/// -> (`mysql://user:password@localhost:3306?pool_max=10&compress=fast`, `database`)
+pub fn parse_create_database_url(url: &str) -> anyhow::Result<(String, String)> {
+    let Some(scheme_end) = url.find("://") else {
+        return Err(anyhow::anyhow!("create_database: invalid url"));
+    };
+    let rest = &url[scheme_end + 3..];
+    let auth_end = rest
+        .find(|c| c == '/' || c == '?' || c == '#')
+        .unwrap_or(rest.len());
+    let after_auth = &rest[auth_end..];
+    let suffix_start = after_auth
+        .find(|c| c == '?' || c == '#')
+        .unwrap_or(after_auth.len());
+    let path = after_auth[..suffix_start].trim_start_matches('/');
+    let db_name = path.trim_end_matches('/');
+    if db_name.is_empty() || db_name.contains('/') {
+        return Err(anyhow::anyhow!("create_database: url has no database name"));
+    }
+
+    let connect_url = format!(
+        "{}{}{}",
+        &url[..scheme_end + 3],
+        &rest[..auth_end],
+        &after_auth[suffix_start..]
+    );
+    Ok((connect_url, db_name.to_string()))
+}
+
 /// Connect with a URL that has no database (e.g. `mysql://user:pass@host:3306`),
 /// create the database, then disconnect.
 #[cfg(feature = "native")]
@@ -59,6 +93,18 @@ pub async fn create_database(
     let result = exec_create_database(&sql, db_name, execution_timeout).await;
     let _ = sql.disconnect().await;
     result
+}
+
+/// Parse a full URL that includes the database name
+/// (e.g. `mysql://user:pass@host:3306/database?pool_max=10`),
+/// connect without selecting that schema, create it, then disconnect.
+#[cfg(feature = "native")]
+pub async fn create_database_from_url(
+    url: &str,
+    execution_timeout: Duration,
+) -> anyhow::Result<()> {
+    let (connect_url, db_name) = parse_create_database_url(url)?;
+    create_database(&connect_url, &db_name, execution_timeout).await
 }
 
 /// Create a database using an existing connection (wasm / already-open pool).

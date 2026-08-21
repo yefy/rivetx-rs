@@ -2,7 +2,8 @@
 mod tests {
     use crate::conn::RivetxSql;
     use crate::create::{
-        create_database, create_database_on, generate_create_database_sql,
+        create_database, create_database_from_url, create_database_on,
+        generate_create_database_sql, parse_create_database_url,
     };
     use crate::util_tests::{lock_test_db, test_open_rivetx_sql};
     use mysql_async::prelude::Queryable;
@@ -23,8 +24,29 @@ mod tests {
         })
     }
 
+    fn mysql_url() -> &'static str {
+        static URL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+        URL.get_or_init(|| {
+            let url = std::env::var("TEST_RIVETX_MYSQL_URL").unwrap_or_default();
+            let url = url.trim();
+            assert!(
+                !url.is_empty(),
+                "TEST_RIVETX_MYSQL_URL must be set, e.g. mysql://user:pass@host:3306/test_db"
+            );
+            url.to_string()
+        })
+    }
+
     fn timeout() -> Duration {
         Duration::from_secs(5)
+    }
+
+    fn mysql_url_with_query(url: &str, query: &str) -> String {
+        if url.contains('?') {
+            format!("{}&{}", url, query)
+        } else {
+            format!("{}?{}", url, query)
+        }
     }
 
     async fn schema_exists(rivetx_sql: &RivetxSql, db_name: &str) -> bool {
@@ -55,6 +77,90 @@ mod tests {
     fn test_generate_create_database_sql_escapes_backtick() {
         let sql = generate_create_database_sql("db`x");
         assert_eq!(sql, "CREATE DATABASE IF NOT EXISTS `db``x`;");
+    }
+
+    #[test]
+    fn test_parse_create_database_url() {
+        let (connect_url, db_name) =
+            parse_create_database_url("mysql://user:password@localhost:3306/database").unwrap();
+        assert_eq!(connect_url, "mysql://user:password@localhost:3306");
+        assert_eq!(db_name, "database");
+    }
+
+    #[test]
+    fn test_parse_create_database_url_with_query() {
+        let (connect_url, db_name) = parse_create_database_url(
+            "mysql://user:password@localhost:3306/database?pool_max=10&compress=fast",
+        )
+        .unwrap();
+        assert_eq!(
+            connect_url,
+            "mysql://user:password@localhost:3306?pool_max=10&compress=fast"
+        );
+        assert_eq!(db_name, "database");
+    }
+
+    #[test]
+    fn test_parse_create_database_url_rejects_missing_db() {
+        let err = parse_create_database_url("mysql://user:password@localhost:3306").unwrap_err();
+        assert!(
+            err.to_string().contains("no database name"),
+            "err={}",
+            err
+        );
+
+        let err = parse_create_database_url("mysql://user:password@localhost:3306/").unwrap_err();
+        assert!(
+            err.to_string().contains("no database name"),
+            "err={}",
+            err
+        );
+
+        let err = parse_create_database_url(
+            "mysql://user:password@localhost:3306/?pool_max=10&compress=fast",
+        )
+        .unwrap_err();
+        assert!(
+            err.to_string().contains("no database name"),
+            "err={}",
+            err
+        );
+    }
+
+    #[tokio::test]
+    async fn test_create_database_from_url() {
+        let _guard = lock_test_db();
+        let url = mysql_url();
+        let (_, db_name) = parse_create_database_url(url).unwrap();
+        create_database_from_url(url, timeout()).await.unwrap();
+
+        let setup = RivetxSql::new(mysql_host(), 1, 2).unwrap();
+        assert!(schema_exists(&setup, &db_name).await);
+        setup.disconnect().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_create_database_from_url_with_query() {
+        let _guard = lock_test_db();
+        let url = mysql_url_with_query(mysql_url(), "pool_max=10");
+        let (_, db_name) = parse_create_database_url(&url).unwrap();
+        create_database_from_url(&url, timeout()).await.unwrap();
+
+        let setup = RivetxSql::new(mysql_host(), 1, 2).unwrap();
+        assert!(schema_exists(&setup, &db_name).await);
+        setup.disconnect().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_create_database_from_url_rejects_missing_db() {
+        let err = create_database_from_url(mysql_host(), timeout())
+            .await
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("no database name"),
+            "err={}",
+            err
+        );
     }
 
     #[tokio::test]

@@ -22,9 +22,10 @@ pub async fn do_main() -> anyhow::Result<()> {
 
     #[cfg(unix)]
     {
+        use anyhow::anyhow;
         use rivetx_core::linux_limit::set_linux_limit;
         use rivetx_core::linux_limit::Limit;
-        set_linux_limit(Limit::default_limit())
+        set_linux_limit(&Limit::default_limit())
             .map_err(|e| anyhow!("Failed to set_linux_limit: {:?}", e))?;
     }
 

@@ -31,12 +31,20 @@ pub struct Limit {
     pub memlock_rlimit_max: u64,
 }
 
-fn default_limit() -> Limit {
-    Limit {
-        open_file_limit_soft: default_open_file_limit_soft(),
-        open_file_limit_hard: default_open_file_limit_hard(),
-        memlock_rlimit_curr: default_memlock_rlimit_curr(),
-        memlock_rlimit_max: default_memlock_rlimit_max(),
+impl Limit {
+    pub fn default_limit() -> Self {
+        Self {
+            open_file_limit_soft: default_open_file_limit_soft(),
+            open_file_limit_hard: default_open_file_limit_hard(),
+            memlock_rlimit_curr: default_memlock_rlimit_curr(),
+            memlock_rlimit_max: default_memlock_rlimit_max(),
+        }
+    }
+}
+
+impl Default for Limit {
+    fn default() -> Self {
+        Self::default_limit()
     }
 }
 
