@@ -29,18 +29,44 @@ pub struct MysqlBackend {
 }
 
 #[cfg(feature = "native")]
+fn url_query_usize(url: &str, key: &str) -> Option<usize> {
+    let query = url.split_once('?')?.1;
+    let query = query.split_once('#').map(|(q, _)| q).unwrap_or(query);
+    let mut found = None;
+    for pair in query.split('&') {
+        let Some((k, v)) = pair.split_once('=') else {
+            continue;
+        };
+        if k == key {
+            if let Ok(n) = v.parse() {
+                found = Some(n);
+            }
+        }
+    }
+    found
+}
+
+#[cfg(feature = "native")]
 impl MysqlBackend {
     pub fn new(
         url: &str,
         max_idle_conns: usize,
         max_open_conns: usize,
     ) -> anyhow::Result<Self> {
-        use mysql_async::{Opts, OptsBuilder, Pool, PoolConstraints, PoolOpts};
+        use mysql_async::{Opts, OptsBuilder, Pool, PoolConstraints};
 
-        let opts = Opts::from_url(url).here()?;
-        let constraints = PoolConstraints::new(max_idle_conns, max_open_conns)
-            .ok_or(anyhow::anyhow!("PoolConstraints::new"))?;
-        let pool_opts = PoolOpts::new().with_constraints(constraints);
+        // mysql://localhost/db?pool_min=0&pool_max=151 — URL 有则用 URL（同名取最后一次），否则用参数
+        let max_idle_conns = url_query_usize(url, "pool_min").unwrap_or(max_idle_conns);
+        let max_open_conns = url_query_usize(url, "pool_max").unwrap_or(max_open_conns);
+        let constraints = PoolConstraints::new(max_idle_conns, max_open_conns).ok_or_else(|| {
+            anyhow::anyhow!(
+                "Invalid pool constraints: pool_min ({}) > pool_max ({}).",
+                max_idle_conns,
+                max_open_conns
+            )
+        })?;
+        let opts = Opts::from_url(&crate::create::url_without_pool_bounds(url)).here()?;
+        let pool_opts = opts.pool_opts().clone().with_constraints(constraints);
         let opts = OptsBuilder::from_opts(opts).pool_opts(pool_opts);
         Ok(Self {
             pool: std::sync::Arc::new(Pool::new(opts)),

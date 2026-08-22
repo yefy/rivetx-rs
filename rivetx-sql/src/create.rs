@@ -81,6 +81,34 @@ pub fn parse_create_database_url(url: &str) -> anyhow::Result<(String, String)> 
     Ok((connect_url, db_name.to_string()))
 }
 
+/// Drop `pool_min` / `pool_max` so a one-shot connect can use the function args.
+pub fn url_without_pool_bounds(url: &str) -> String {
+    let Some((base, rest)) = url.split_once('?') else {
+        return url.to_string();
+    };
+    let (query, fragment) = rest
+        .split_once('#')
+        .map(|(q, f)| (q, Some(f)))
+        .unwrap_or((rest, None));
+    let kept: Vec<&str> = query
+        .split('&')
+        .filter(|pair| {
+            let key = pair.split_once('=').map(|(k, _)| k).unwrap_or(pair);
+            key != "pool_min" && key != "pool_max"
+        })
+        .collect();
+    let mut out = base.to_string();
+    if !kept.is_empty() {
+        out.push('?');
+        out.push_str(&kept.join("&"));
+    }
+    if let Some(fragment) = fragment {
+        out.push('#');
+        out.push_str(fragment);
+    }
+    out
+}
+
 /// Connect with a URL that has no database (e.g. `mysql://user:pass@host:3306`),
 /// create the database, then disconnect.
 #[cfg(feature = "native")]
@@ -89,7 +117,7 @@ pub async fn create_database(
     db_name: &str,
     execution_timeout: Duration,
 ) -> anyhow::Result<()> {
-    let sql = RivetxSql::new(url, 1, 2)?;
+    let sql = RivetxSql::new(&url_without_pool_bounds(url), 1, 2)?;
     let result = exec_create_database(&sql, db_name, execution_timeout).await;
     let _ = sql.disconnect().await;
     result

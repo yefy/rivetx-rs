@@ -142,7 +142,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_database_from_url_with_query() {
         let _guard = lock_test_db();
-        let url = mysql_url_with_query(mysql_url(), "pool_max=10");
+        let url = mysql_url_with_query(mysql_url(), "compression=fast");
         let (_, db_name) = parse_create_database_url(&url).unwrap();
         create_database_from_url(&url, timeout()).await.unwrap();
 

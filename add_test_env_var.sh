@@ -29,10 +29,10 @@ add_test_env() {
     esac
 }
 
-add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306"
-add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db"
+add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
+add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
 add_test_env TEST_RIVETX_REDIS_URL "redis://${TEST_IP}:6379"
 
-add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306"
-add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db"
+add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
+add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
 add_test_env TEST_ANYPROXY_REDIS_URL "redis://${TEST_IP}:6379"
