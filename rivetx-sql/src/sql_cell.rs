@@ -40,9 +40,10 @@ pub fn take_sql_cell(
 ) -> anyhow::Result<SqlCell> {
     for (i, col) in cols.iter().enumerate() {
         if col.as_str().eq_ignore_ascii_case(name) {
-            return cells.get(i).cloned().ok_or_else(|| {
-                anyhow::anyhow!("missing cell for column {}", name)
-            });
+            return cells
+                .get(i)
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("missing cell for column {}", name));
         }
     }
     Err(anyhow::anyhow!("column {} not found in {:?}", name, cols))
@@ -161,9 +162,8 @@ fn mysql_value_to_cell(v: mysql_async::Value) -> SqlCell {
         Value::Float(f) => SqlCell::F64(f as f64),
         Value::Double(f) => SqlCell::F64(f),
         Value::Date(y, m, d, h, min, s, micro) => {
-            let dt = chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32).and_then(
-                |date| date.and_hms_micro_opt(h as u32, min as u32, s as u32, micro),
-            );
+            let dt = chrono::NaiveDate::from_ymd_opt(y as i32, m as u32, d as u32)
+                .and_then(|date| date.and_hms_micro_opt(h as u32, min as u32, s as u32, micro));
             match dt {
                 Some(dt) => SqlCell::DateTime(dt),
                 None => SqlCell::Null,
@@ -206,8 +206,7 @@ impl FromSqlCell for String {
     fn from_sql_cell(cell: SqlCell) -> anyhow::Result<Self> {
         match cell {
             SqlCell::Str(s) => Ok(s.into_string()),
-            SqlCell::Bytes(b) => String::from_utf8(b)
-                .map_err(|e| anyhow!("utf8:{}", e)),
+            SqlCell::Bytes(b) => String::from_utf8(b).map_err(|e| anyhow!("utf8:{}", e)),
             SqlCell::Null => Ok(String::new()),
             other => Err(anyhow!("cannot convert {:?} to String", other)),
         }
@@ -261,9 +260,9 @@ impl FromSqlCell for chrono::NaiveDateTime {
         match cell {
             SqlCell::DateTime(v) => Ok(v),
             SqlCell::Str(s) => parse_naive_datetime(s.as_str()),
-            SqlCell::Bytes(b) => parse_naive_datetime(
-                std::str::from_utf8(&b).map_err(|e| anyhow!("utf8:{}", e))?,
-            ),
+            SqlCell::Bytes(b) => {
+                parse_naive_datetime(std::str::from_utf8(&b).map_err(|e| anyhow!("utf8:{}", e))?)
+            }
             other => Err(anyhow!("cannot convert {:?} to NaiveDateTime", other)),
         }
     }
@@ -289,11 +288,7 @@ macro_rules! impl_from_sql_int {
                         .map_err(|_| anyhow!("u64 {} does not fit {}", v, stringify!($t))),
                     SqlCell::Bool(v) => Ok(if v { 1 as $t } else { 0 as $t }),
                     SqlCell::Null => Ok(0 as $t),
-                    other => Err(anyhow!(
-                        "cannot convert {:?} to {}",
-                        other,
-                        stringify!($t)
-                    )),
+                    other => Err(anyhow!("cannot convert {:?} to {}", other, stringify!($t))),
                 }
             }
         }

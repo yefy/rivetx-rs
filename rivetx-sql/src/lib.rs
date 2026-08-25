@@ -12,9 +12,9 @@ pub mod util;
 extern crate self as rivetx_sql;
 
 #[cfg(all(test, feature = "native"))]
-mod create_test;
-#[cfg(all(test, feature = "native"))]
 mod create_database_test;
+#[cfg(all(test, feature = "native"))]
+mod create_test;
 #[cfg(feature = "native")]
 pub mod create_tests;
 #[cfg(all(test, feature = "native"))]
@@ -73,9 +73,9 @@ pub trait ToSqlValues {
     fn to_values(&self) -> Vec<crate::sql_cell::SqlCell>;
 }
 
-pub use crate::backend::SqlBackend;
 #[cfg(feature = "native")]
 pub use crate::backend::MysqlBackend;
+pub use crate::backend::SqlBackend;
 pub use crate::conn::RivetxSql;
 pub use crate::sql_cell::{
     take_sql_cell, FromSqlCell, FromSqlCells, SqlCell, SqlExecResult, SqlValue,

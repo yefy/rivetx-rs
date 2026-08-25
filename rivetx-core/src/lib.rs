@@ -14,9 +14,6 @@ pub mod arc_string;
 #[cfg(test)]
 mod arc_string_test;
 pub mod async_channel;
-pub mod rivetx_string;
-#[cfg(test)]
-mod rivetx_string_test;
 pub mod linked_hash_mapx;
 #[cfg(test)]
 mod linked_hash_mapx_test;
@@ -26,11 +23,20 @@ pub mod queue_test;
 pub mod rivetx_str;
 #[cfg(test)]
 pub mod rivetx_str_test;
+pub mod rivetx_string;
+#[cfg(test)]
+mod rivetx_string_test;
 #[cfg(feature = "native")]
 pub mod rivetx_string_tests;
 
 #[cfg(feature = "native")]
+pub mod config_manager;
+#[cfg(feature = "native")]
 pub mod linux_limit;
+#[cfg(feature = "native")]
+pub mod memory_cache;
+#[cfg(all(test, feature = "native"))]
+pub mod memory_cache_test;
 #[cfg(feature = "native")]
 pub mod spawnx;
 #[cfg(all(test, feature = "native"))]
@@ -43,9 +49,3 @@ pub mod task_group;
 mod task_group_test;
 #[cfg(feature = "native")]
 pub mod thread_panic;
-#[cfg(feature = "native")]
-pub mod config_manager;
-#[cfg(feature = "native")]
-pub mod memory_cache;
-#[cfg(all(test, feature = "native"))]
-pub mod memory_cache_test;

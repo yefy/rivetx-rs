@@ -1,7 +1,7 @@
 use crate::sql_cell::{SqlCell, SqlExecResult};
-use async_trait::async_trait;
 #[cfg(feature = "native")]
 use anyhow::Context;
+use async_trait::async_trait;
 use std::time::Duration;
 
 #[async_trait]
@@ -48,23 +48,20 @@ fn url_query_usize(url: &str, key: &str) -> Option<usize> {
 
 #[cfg(feature = "native")]
 impl MysqlBackend {
-    pub fn new(
-        url: &str,
-        max_idle_conns: usize,
-        max_open_conns: usize,
-    ) -> anyhow::Result<Self> {
+    pub fn new(url: &str, max_idle_conns: usize, max_open_conns: usize) -> anyhow::Result<Self> {
         use mysql_async::{Opts, OptsBuilder, Pool, PoolConstraints};
 
         // mysql://localhost/db?pool_min=0&pool_max=151 — URL 有则用 URL（同名取最后一次），否则用参数
         let max_idle_conns = url_query_usize(url, "pool_min").unwrap_or(max_idle_conns);
         let max_open_conns = url_query_usize(url, "pool_max").unwrap_or(max_open_conns);
-        let constraints = PoolConstraints::new(max_idle_conns, max_open_conns).ok_or_else(|| {
-            anyhow::anyhow!(
-                "Invalid pool constraints: pool_min ({}) > pool_max ({}).",
-                max_idle_conns,
-                max_open_conns
-            )
-        })?;
+        let constraints =
+            PoolConstraints::new(max_idle_conns, max_open_conns).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Invalid pool constraints: pool_min ({}) > pool_max ({}).",
+                    max_idle_conns,
+                    max_open_conns
+                )
+            })?;
         let opts = Opts::from_url(&crate::create::url_without_pool_bounds(url)).here()?;
         let pool_opts = opts.pool_opts().clone().with_constraints(constraints);
         let opts = OptsBuilder::from_opts(opts).pool_opts(pool_opts);
@@ -122,7 +119,10 @@ impl SqlBackend for MysqlBackend {
 
         match tokio::time::timeout(timeout, fut).await {
             Ok(v) => v,
-            Err(_) => Err(anyhow::anyhow!("sql exec timeout: {}ms", timeout.as_millis())),
+            Err(_) => Err(anyhow::anyhow!(
+                "sql exec timeout: {}ms",
+                timeout.as_millis()
+            )),
         }
     }
 

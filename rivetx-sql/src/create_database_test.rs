@@ -60,10 +60,7 @@ mod tests {
     }
 
     async fn drop_database(rivetx_sql: &RivetxSql, db_name: &str) {
-        let sql = format!(
-            "DROP DATABASE IF EXISTS `{}`",
-            db_name.replace('`', "``")
-        );
+        let sql = format!("DROP DATABASE IF EXISTS `{}`", db_name.replace('`', "``"));
         rivetx_sql.exec(&sql, &[], timeout()).await.unwrap();
     }
 
@@ -103,28 +100,16 @@ mod tests {
     #[test]
     fn test_parse_create_database_url_rejects_missing_db() {
         let err = parse_create_database_url("mysql://user:password@localhost:3306").unwrap_err();
-        assert!(
-            err.to_string().contains("no database name"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("no database name"), "err={}", err);
 
         let err = parse_create_database_url("mysql://user:password@localhost:3306/").unwrap_err();
-        assert!(
-            err.to_string().contains("no database name"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("no database name"), "err={}", err);
 
         let err = parse_create_database_url(
             "mysql://user:password@localhost:3306/?pool_max=10&compress=fast",
         )
         .unwrap_err();
-        assert!(
-            err.to_string().contains("no database name"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("no database name"), "err={}", err);
     }
 
     #[tokio::test]
@@ -156,11 +141,7 @@ mod tests {
         let err = create_database_from_url(mysql_host(), timeout())
             .await
             .unwrap_err();
-        assert!(
-            err.to_string().contains("no database name"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("no database name"), "err={}", err);
     }
 
     #[tokio::test]
@@ -168,11 +149,7 @@ mod tests {
         let err = create_database(mysql_host(), "", timeout())
             .await
             .unwrap_err();
-        assert!(
-            err.to_string().contains("db name is empty"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("db name is empty"), "err={}", err);
     }
 
     #[tokio::test]
@@ -181,11 +158,7 @@ mod tests {
         let err = create_database_on(&rivetx_sql, "", timeout())
             .await
             .unwrap_err();
-        assert!(
-            err.to_string().contains("db name is empty"),
-            "err={}",
-            err
-        );
+        assert!(err.to_string().contains("db name is empty"), "err={}", err);
         rivetx_sql.disconnect().await.unwrap();
     }
 

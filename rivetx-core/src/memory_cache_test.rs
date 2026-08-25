@@ -63,7 +63,10 @@ mod tests {
         assert_eq!(cache.hget("users", "alice"), Some("admin".to_string()));
         assert_eq!(cache.hlen("users"), 2);
         assert_eq!(cache.hstrlen("users", "alice"), 5);
-        assert_eq!(cache.hmget("users", &["alice", "bob", "ghost"]), vec![Some("admin".to_string()), Some("user".to_string()), None]);
+        assert_eq!(
+            cache.hmget("users", &["alice", "bob", "ghost"]),
+            vec![Some("admin".to_string()), Some("user".to_string()), None]
+        );
 
         let mut expected = std::collections::HashMap::new();
         expected.insert("alice".to_string(), "admin".to_string());
