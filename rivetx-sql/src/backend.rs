@@ -85,11 +85,25 @@ impl SqlBackend for MysqlBackend {
         use rivetx_core::rivetx_string::RivetxString;
 
         let params: Vec<Value> = args.iter().cloned().map(Value::from).collect();
-        let mut conn = self
-            .pool
-            .get_conn()
-            .await
-            .map_err(|e| anyhow::anyhow!("pool.get_conn err:{}", e))?;
+        let started = tokio::time::Instant::now();
+        let mut conn = match tokio::time::timeout(timeout, self.pool.get_conn()).await {
+            Ok(Ok(c)) => c,
+            Ok(Err(e)) => return Err(anyhow::anyhow!("pool.get_conn err:{}", e)),
+            Err(_) => {
+                return Err(anyhow::anyhow!(
+                    "sql exec timeout: {}ms (get_conn)",
+                    timeout.as_millis()
+                ));
+            }
+        };
+        let remaining = timeout.saturating_sub(started.elapsed());
+        if remaining.is_zero() {
+            let _ = conn.disconnect().await;
+            return Err(anyhow::anyhow!(
+                "sql exec timeout: {}ms (get_conn)",
+                timeout.as_millis()
+            ));
+        }
         let fut = async {
             let mut result = conn.exec_iter(sql, params).await?;
             let affected = result.affected_rows();
@@ -117,12 +131,17 @@ impl SqlBackend for MysqlBackend {
             })
         };
 
-        match tokio::time::timeout(timeout, fut).await {
+        match tokio::time::timeout(remaining, fut).await {
             Ok(v) => v,
-            Err(_) => Err(anyhow::anyhow!(
-                "sql exec timeout: {}ms",
-                timeout.as_millis()
-            )),
+            Err(_) => {
+                // 查询做到一半被取消时协议序号已经乱了；必须 disconnect，
+                // 否则 Drop 把半截连接还回池，下次 get_conn 会 packet out of order。
+                let _ = conn.disconnect().await;
+                Err(anyhow::anyhow!(
+                    "sql exec timeout: {}ms",
+                    timeout.as_millis()
+                ))
+            }
         }
     }
 
