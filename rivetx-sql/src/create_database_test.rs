@@ -98,6 +98,24 @@ mod tests {
     }
 
     #[test]
+    fn test_mysql_url_password_contains_at() {
+        let url = "mysql://root:Yfygz@389@127.0.0.1:3306/test_db?pool_min=100&pool_max=1000";
+        let opts = mysql_async::Opts::from_url(url).unwrap();
+        assert_eq!(
+            opts.ip_or_hostname(),
+            "127.0.0.1",
+            "host={:?} port={} pass={:?}",
+            opts.ip_or_hostname(),
+            opts.tcp_port(),
+            opts.pass()
+        );
+        assert_eq!(opts.tcp_port(), 3306);
+        assert_eq!(opts.pass(), Some("Yfygz@389"));
+        assert_eq!(opts.user(), Some("root"));
+        assert_eq!(opts.db_name(), Some("test_db"));
+    }
+
+    #[test]
     fn test_parse_create_database_url_rejects_missing_db() {
         let err = parse_create_database_url("mysql://user:password@localhost:3306").unwrap_err();
         assert!(err.to_string().contains("no database name"), "err={}", err);

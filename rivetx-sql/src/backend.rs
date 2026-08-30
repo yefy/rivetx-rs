@@ -64,7 +64,9 @@ impl MysqlBackend {
             })?;
         let opts = Opts::from_url(&crate::create::url_without_pool_bounds(url)).here()?;
         let pool_opts = opts.pool_opts().clone().with_constraints(constraints);
-        let opts = OptsBuilder::from_opts(opts).pool_opts(pool_opts);
+        let opts = OptsBuilder::from_opts(opts)
+            .pool_opts(pool_opts)
+            .prefer_socket(Some(false));
         Ok(Self {
             pool: std::sync::Arc::new(Pool::new(opts)),
         })

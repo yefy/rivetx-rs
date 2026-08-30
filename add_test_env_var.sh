@@ -8,6 +8,8 @@
 
 TEST_IP="127.0.0.1"
 TEST_PASSWORD="Yfygz@389"
+# `@` in the password must be %40, otherwise URL parsers can split host/password wrong.
+TEST_PASSWORD_ENC="${TEST_PASSWORD//@/%40}"
 
 add_test_env() {
     local name="$1"
@@ -16,12 +18,12 @@ add_test_env() {
     echo "${name}=${value}"
 }
 
-add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
-add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
+add_test_env TEST_RIVETX_MYSQL_HOST "mysql://root:${TEST_PASSWORD_ENC}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
+add_test_env TEST_RIVETX_MYSQL_URL "mysql://root:${TEST_PASSWORD_ENC}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
 add_test_env TEST_RIVETX_REDIS_URL "redis://${TEST_IP}:6379"
 
-add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
-add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:${TEST_PASSWORD}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
+add_test_env TEST_ANYPROXY_MYSQL_HOST "mysql://root:${TEST_PASSWORD_ENC}@${TEST_IP}:3306?pool_min=100&pool_max=1000"
+add_test_env TEST_ANYPROXY_MYSQL_URL "mysql://root:${TEST_PASSWORD_ENC}@${TEST_IP}:3306/test_db?pool_min=100&pool_max=1000"
 add_test_env TEST_ANYPROXY_REDIS_URL "redis://${TEST_IP}:6379"
 
 _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
