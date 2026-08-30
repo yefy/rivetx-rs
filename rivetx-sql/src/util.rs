@@ -3,7 +3,7 @@ use rivetx_core::rivetx_string::RivetxString;
 use std::time::Duration;
 
 pub const BATCH_SIZE: usize = 1024;
-pub const TIMEOUT: Duration = Duration::from_secs(15);
+pub const TIMEOUT: Duration = Duration::from_secs(120);
 
 pub async fn sleep_duration(d: Duration) {
     #[cfg(feature = "native")]
