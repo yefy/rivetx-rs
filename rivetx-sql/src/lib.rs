@@ -14,8 +14,6 @@ extern crate self as rivetx_sql;
 #[cfg(all(test, feature = "native"))]
 mod create_database_test;
 #[cfg(all(test, feature = "native"))]
-mod pool_get_conn_stress_test;
-#[cfg(all(test, feature = "native"))]
 mod create_test;
 #[cfg(feature = "native")]
 pub mod create_tests;
@@ -29,6 +27,8 @@ pub mod insert_test;
 pub mod insert_tests;
 #[cfg(feature = "native")]
 pub mod insert_tests2;
+#[cfg(all(test, feature = "native"))]
+mod pool_get_conn_stress_test;
 #[cfg(feature = "native")]
 pub mod rivetx_sql_tests;
 #[cfg(feature = "native")]

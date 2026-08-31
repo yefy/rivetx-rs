@@ -67,12 +67,7 @@ impl Counters {
     }
 
     fn summary(&self, name: &str) -> String {
-        let first = self
-            .first_err
-            .lock()
-            .unwrap()
-            .clone()
-            .unwrap_or_default();
+        let first = self.first_err.lock().unwrap().clone().unwrap_or_default();
         format!(
             "{}: ok={} err={} wsaeinval=10022:{} first_err={}",
             name,
@@ -196,7 +191,12 @@ async fn get_conn_stress_multi_task() {
         + shared_url.wsaeinval()
         + create_db.wsaeinval()
         + new_pool_small.wsaeinval();
-    assert_eq!(wsa, 0, "os error 10022 in native mysql (no wasm)\n{}", lines.join("\n"));
+    assert_eq!(
+        wsa,
+        0,
+        "os error 10022 in native mysql (no wasm)\n{}",
+        lines.join("\n")
+    );
 }
 
 /// URL 带 pool_min=100 时，并发「每任务 new 池 + get_conn + disconnect」。
@@ -279,11 +279,15 @@ fn get_conn_stress_os_threads() {
                     .await;
 
                     for src in [c1, c2] {
-                        counters.ok.fetch_add(src.ok.load(Ordering::Relaxed), Ordering::Relaxed);
+                        counters
+                            .ok
+                            .fetch_add(src.ok.load(Ordering::Relaxed), Ordering::Relaxed);
                         counters
                             .err
                             .fetch_add(src.err.load(Ordering::Relaxed), Ordering::Relaxed);
-                        counters.wsaeinval.fetch_add(src.wsaeinval(), Ordering::Relaxed);
+                        counters
+                            .wsaeinval
+                            .fetch_add(src.wsaeinval(), Ordering::Relaxed);
                         let mut dst = counters.first_err.lock().unwrap();
                         if dst.is_none() {
                             *dst = src.first_err.lock().unwrap().clone();
