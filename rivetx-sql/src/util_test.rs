@@ -87,6 +87,27 @@ mod tests {
         assert_eq!(cloned.fixed_vals.len(), 2);
     }
 
+    #[test]
+    fn test_query_cond_set_in_single_column() {
+        let mut cond = QueryCond::new();
+        cond.set_in("aaa", ["1", "2", "3"]);
+        assert_eq!(cond.in_cols, vec![RivetxString::from("aaa")]);
+        assert_eq!(cond.in_vals.len(), 3);
+        assert_eq!(cond.in_vals[0].len(), 1);
+        assert_eq!(cond.in_vals[1].len(), 1);
+        assert_eq!(cond.in_vals[2].len(), 1);
+    }
+
+    #[test]
+    fn test_query_cond_set_in_rows_mixed_types() {
+        let mut cond = QueryCond::new();
+        cond.set_in_rows(["id", "name"], vec![(1i64, "a"), (2i64, "b")]);
+        assert_eq!(cond.in_cols.len(), 2);
+        assert_eq!(cond.in_vals.len(), 2);
+        assert_eq!(cond.in_vals[0].len(), 2);
+        assert_eq!(cond.in_vals[1].len(), 2);
+    }
+
     // ────────── QueryStruct Tests ──────────
 
     #[test]

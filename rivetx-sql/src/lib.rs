@@ -82,3 +82,4 @@ pub use crate::conn::RivetxSql;
 pub use crate::sql_cell::{
     take_sql_cell, FromSqlCell, FromSqlCells, SqlCell, SqlExecResult, SqlValue,
 };
+pub use crate::util::IntoSqlRow;

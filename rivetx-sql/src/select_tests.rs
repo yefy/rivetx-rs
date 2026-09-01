@@ -269,10 +269,9 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
 
     {
         info!("test WhereIn");
-        let in_vals = vec![vec!["yyy".into()], vec!["xxx".into()]];
         let res1: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1)
-            .where_in(vec!["key_col".into()], in_vals)
+            .where_in("key_col", ["yyy", "xxx"])
             .timeout(Duration::from_secs(10))
             .exec(rivetx_sql)
             .await
@@ -288,9 +287,27 @@ pub async fn test_select_with_where_point(rivetx_sql: &RivetxSql) -> Result<()> 
     }
 
     {
+        info!("test WhereInRows mixed types");
+        let res1: Vec<TestData> = SelectBuilder::new("test_data")
+            .where_in_rows(["key_col", "name_id"], vec![("abc", 101i32)])
+            .timeout(Duration::from_secs(10))
+            .exec(rivetx_sql)
+            .await
+            .here()?;
+
+        info!("res1:{:?}", res1);
+        if res1.len() != 1 {
+            return Err(anyhow!("expected 1 rows, got {}", res1.len()));
+        }
+        if res1[0].key != "abc" {
+            return Err(anyhow!("expected key abc"));
+        }
+    }
+
+    {
         let res = SelectBuilder::<TestData>::new("test_data")
             .where_eq("index_col", 1)
-            .where_in(vec!["key_col".into()], vec![])
+            .where_in("key_col", Vec::<&str>::new())
             .timeout(Duration::from_secs(10))
             .exec(rivetx_sql)
             .await;

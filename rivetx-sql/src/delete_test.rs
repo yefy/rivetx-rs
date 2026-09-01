@@ -275,7 +275,7 @@ mod tests {
         seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new("test_data")
-            .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![3.into()]])
+            .where_in("name_id", [1i32, 3])
             .exec(&rivetx_sql)
             .await
             .here()?;
@@ -293,10 +293,25 @@ mod tests {
         seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new("test_data")
-            .where_in(
-                vec!["name_id".into(), "name_index".into()],
-                vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
-            )
+            .where_in_rows(["name_id", "name_index"], vec![(1i32, 1001i32), (2, 1002)])
+            .exec(&rivetx_sql)
+            .await
+            .here()?;
+        assert_eq!(res.total_affected, 2);
+
+        let count = test_data_count_rows(&rivetx_sql, "test_data").await;
+        assert_eq!(count, 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_delete_builder_where_in_rows_mixed_types_exec() -> anyhow::Result<()> {
+        let _guard = lock_test_data();
+        let rivetx_sql = test_open_rivetx_sql().await.here()?;
+        seed_test_data(&rivetx_sql).await.here()?;
+
+        let res = DeleteBuilder::new("test_data")
+            .where_in_rows(["key_col", "name_id"], vec![("abc", 1i32), ("xyz", 3i32)])
             .exec(&rivetx_sql)
             .await
             .here()?;
@@ -315,7 +330,7 @@ mod tests {
 
         let res = DeleteBuilder::new("test_data")
             .where_in_batch_size(1)
-            .where_in(vec!["name_id".into()], vec![vec![1.into()], vec![2.into()]])
+            .where_in("name_id", [1i32, 2])
             .exec(&rivetx_sql)
             .await
             .here()?;
@@ -447,10 +462,7 @@ mod tests {
 
         let res = DeleteBuilder::new("test_data")
             .where_eq("key_col", "abc")
-            .where_in(
-                vec!["name_id".into(), "name_index".into()],
-                vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
-            )
+            .where_in_rows(["name_id", "name_index"], vec![(1i32, 1001i32), (2, 1002)])
             .where_raw("index_col >= ?", vec![SqlValue::from(Value::from(0i32))])
             .limit(10)
             .timeout(Duration::from_secs(5))
@@ -523,7 +535,7 @@ mod tests {
         // Current behavior: in_cols is set but in_vals is empty, which produces no WHERE clause.
         // That becomes a full-table delete. This test locks down the behavior explicitly.
         let res = DeleteBuilder::new("test_data")
-            .where_in(vec!["name_id".into()], vec![])
+            .where_in("name_id", Vec::<i32>::new())
             .exec(&rivetx_sql)
             .await
             .here()?;
@@ -621,10 +633,7 @@ mod tests {
         seed_test_data(&rivetx_sql).await.here()?;
 
         let res = DeleteBuilder::new("test_data")
-            .where_in(
-                vec!["name_id".into(), "name_index".into()],
-                vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
-            )
+            .where_in_rows(["name_id", "name_index"], vec![(1i32, 1001i32), (2, 1002)])
             .exec(&rivetx_sql)
             .await
             .here()?;

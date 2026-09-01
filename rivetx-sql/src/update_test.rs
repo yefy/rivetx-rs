@@ -994,7 +994,7 @@ mod tests {
 
     #[test]
     fn test_default_timeout() {
-        assert_eq!(TIMEOUT, Duration::from_secs(15));
+        assert_eq!(TIMEOUT, Duration::from_secs(120));
     }
 
     #[test]

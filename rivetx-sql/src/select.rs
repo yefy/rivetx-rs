@@ -1,6 +1,6 @@
 use crate::conn::RivetxSql;
 use crate::sql_cell::{FromSqlCells, SqlValue};
-use crate::util::{build_query, QueryCond, BATCH_SIZE, TIMEOUT};
+use crate::util::{build_query, IntoSqlRow, QueryCond, BATCH_SIZE, TIMEOUT};
 use crate::{FromSqlRow, StructMeta};
 use anyhow::Context;
 use anyhow::{anyhow, Result};
@@ -245,9 +245,27 @@ where
         self
     }
 
-    pub fn where_in(mut self, cols: Vec<RivetxString>, vals: Vec<Vec<SqlValue>>) -> Self {
-        self.query_cond.in_cols = cols;
-        self.query_cond.in_vals = vals;
+    /// `WHERE col IN (v1, v2, v3)`
+    pub fn where_in<C, V, I>(mut self, col: C, vals: I) -> Self
+    where
+        C: Into<RivetxString>,
+        I: IntoIterator<Item = V>,
+        V: Into<SqlValue>,
+    {
+        self.query_cond.set_in(col, vals);
+        self
+    }
+
+    /// `WHERE (c1, c2, ...) IN ((v1, v2, ...), ...)`
+    ///
+    /// Each row is a mixed-type tuple or a same-type array whose length matches `cols`.
+    pub fn where_in_rows<C, R, I, const N: usize>(mut self, cols: [C; N], rows: I) -> Self
+    where
+        C: Into<RivetxString>,
+        I: IntoIterator<Item = R>,
+        R: IntoSqlRow<N>,
+    {
+        self.query_cond.set_in_rows(cols, rows);
         self
     }
 

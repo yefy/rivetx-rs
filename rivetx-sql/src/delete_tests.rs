@@ -386,10 +386,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
         let res = DeleteBuilder::new("test_data")
             .where_eq("index_col", 0)
             .where_eq("key_col", "abc")
-            .where_in(
-                vec!["name_id".into(), "name_index".into()],
-                vec![vec![1.into(), 1001.into()], vec![2.into(), 1002.into()]],
-            )
+            .where_in_rows(["name_id", "name_index"], vec![(1i32, 1001i32), (2, 1002)])
             .exec(rivetx_sql)
             .await
             .here()?;
@@ -404,10 +401,7 @@ async fn test_batch_delete_per_group_struct2(rivetx_sql: &RivetxSql) -> Result<(
 
     {
         let res = DeleteBuilder::new("test_data")
-            .where_in(
-                vec!["name_id".into(), "name_index".into()],
-                vec![vec![4.into(), 1004.into()], vec![5.into(), 1005.into()]],
-            )
+            .where_in_rows(["name_id", "name_index"], vec![(4i32, 1004i32), (5, 1005)])
             .exec(rivetx_sql)
             .await
             .here()?;
@@ -604,10 +598,7 @@ async fn test_batch_delete_per_group_struct2_point_limit(rivetx_sql: &RivetxSql)
     }
 
     let res = DeleteBuilder::new("test_data")
-        .where_in(
-            vec!["name_id".into(), "name_index".into()],
-            vec![vec![4.into(), 1004.into()], vec![5.into(), 1005.into()]],
-        )
+        .where_in_rows(["name_id", "name_index"], vec![(4i32, 1004i32), (5, 1005)])
         .limit(1)
         .exec(rivetx_sql)
         .await

@@ -387,6 +387,7 @@ mod tests {
         test_exec_chained_calls(&rivetx_sql).await;
         test_exec_where_in_single_col(&rivetx_sql).await;
         test_exec_where_in_multi_col(&rivetx_sql).await;
+        test_exec_where_in_rows_same_type_array(&rivetx_sql).await;
         test_exec_where_in_empty_vals(&rivetx_sql).await;
         test_exec_where_eq_different_types(&rivetx_sql).await;
         test_exec_with_batch_size(&rivetx_sql).await;
@@ -539,10 +540,7 @@ mod tests {
         // Chain all builder methods
         let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
-            .where_in(
-                vec!["key_col".into()],
-                vec![vec!["abc".into()], vec!["def".into()]],
-            )
+            .where_in("key_col", ["abc", "def"])
             .where_cond("name_id > ?", vec![SqlValue::from(Value::from(50i32))])
             .order("order by key_col")
             .limit(10)
@@ -569,10 +567,7 @@ mod tests {
         // Query with where_in on single column
         let result: Vec<TestData> = SelectBuilder::new("test_data")
             .where_eq("index_col", 1i32)
-            .where_in(
-                vec!["key_col".into()],
-                vec![vec!["abc".into()], vec!["def".into()]],
-            )
+            .where_in("key_col", ["abc", "def"])
             .order("order by key_col")
             .exec(rivetx_sql)
             .await
@@ -591,15 +586,32 @@ mod tests {
             .await
             .unwrap();
 
-        // Query with where_in on multiple columns
+        // Query with where_in_rows on mixed-type columns (&str, i32)
         let result: Vec<TestData> = SelectBuilder::new("test_data")
-            .where_in(
-                vec!["key_col".into(), "name_id".into()],
-                vec![
-                    vec!["abc".into(), 100i32.into()],
-                    vec!["def".into(), 101i32.into()],
-                ],
+            .where_in_rows(
+                ["key_col", "name_id"],
+                vec![("abc", 100i32), ("def", 101i32)],
             )
+            .order("order by key_col")
+            .exec(rivetx_sql)
+            .await
+            .unwrap();
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].key, "abc");
+        assert_eq!(result[1].key, "def");
+    }
+
+    async fn test_exec_where_in_rows_same_type_array(rivetx_sql: &crate::conn::RivetxSql) {
+        setup_table(rivetx_sql).await;
+
+        let curr_time = now_truncated();
+        let _initial_data = insert_initial_data(rivetx_sql, curr_time.clone())
+            .await
+            .unwrap();
+
+        let result: Vec<TestData> = SelectBuilder::new("test_data")
+            .where_in_rows(["name_id", "name_index"], vec![[100i32, 1000], [101, 1001]])
             .order("order by key_col")
             .exec(rivetx_sql)
             .await
@@ -621,7 +633,7 @@ mod tests {
         // Query with empty where_in should return an error
         let result = SelectBuilder::<TestData>::new("test_data")
             .where_eq("index_col", 1i32)
-            .where_in(vec!["key_col".into()], vec![])
+            .where_in("key_col", Vec::<&str>::new())
             .exec(rivetx_sql)
             .await;
 
@@ -1189,7 +1201,7 @@ mod tests {
 
     #[test]
     fn test_default_timeout() {
-        assert_eq!(TIMEOUT, Duration::from_secs(15));
+        assert_eq!(TIMEOUT, Duration::from_secs(120));
     }
 
     #[test]
